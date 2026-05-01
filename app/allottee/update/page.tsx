@@ -1,5 +1,8 @@
 'use client';
 
+// Force dynamic rendering — prevents Vercel build prerender crash
+export const dynamic = 'force-dynamic';
+
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { BrandHeader } from '@/components/BrandHeader';

@@ -1,5 +1,9 @@
 'use client';
 
+// Force dynamic rendering — prevents Vercel build prerender crash
+// (Supabase client requires env vars only available at runtime)
+export const dynamic = 'force-dynamic';
+
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
