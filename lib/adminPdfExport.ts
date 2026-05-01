@@ -180,13 +180,13 @@ export async function generateAdminPDF() {
       1: { cellWidth: 'auto', fontStyle: 'bold', fontSize: 10 },
     },
     body: [
-      [      [s('Total Park Investment - All Parks (Rs. Cr)'),   s(\Rs.\ Cr\)],
-      [      [s('Total Employment - All Parks'),                 s(\\ employees\)],
-      ['  \u2514 Male / Female / Contractual',                  `${n(empMale)} M  |  ${n(empFemale)} F  |  ${n(empContr)} C`],
-      ['  \u2514 Female Workforce %',                           `${genderPct}%  (National Target: 30%)`],
-      ['Total Water Consumption \u2014 Current Month (KLD)',   `${n(totalWater)} KLD`],
-      ['Total Power Consumption \u2014 Current Month (kWh)',   `${n(totalPower)} kWh`],
-      [s('Total CSR Funds Deployed - FY 2024-25 (Rs. Lakhs)'), s(`Rs.${n(totalCSR)} Lakhs`)],
+      [s('Total Park Investment - All Parks (Rs. Cr)'),   s('Rs.' + n(totalInvestment) + ' Cr')],
+      [s('Total Employment - All Parks'),                 s(n(empTotal) + ' employees')],
+      [s('Breakdown: Male / Female / Contractual'),       s(n(empMale) + ' M | ' + n(empFemale) + ' F | ' + n(empContr) + ' C')],
+      [s('Female Workforce %'),                           s(genderPct + '% (Target: 30%)')],
+      [s('Total Water Consumption - Current Month (KLD)'), s(n(totalWater) + ' KLD')],
+      [s('Total Power Consumption - Current Month (kWh)'), s(n(totalPower) + ' kWh')],
+      [s('Total CSR Funds Deployed - FY 2024-25 (Rs. Lakhs)'), s('Rs.' + n(totalCSR) + ' Lakhs')],
     ],
     didParseCell: (d: any) => {
       if (d.section !== 'body') return;
