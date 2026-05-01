@@ -13,6 +13,7 @@ import {
 import { BrandHeader } from '@/components/BrandHeader';
 import dynamic from 'next/dynamic';
 import type { ParkData } from '@/components/ParkMap';
+import { generateAdminPDF } from '@/lib/adminPdfExport';
 
 const ParkMap = dynamic(() => import('@/components/ParkMap'), { ssr: false });
 
@@ -191,8 +192,15 @@ function InvestmentTooltip({ active, payload, label }: any) {
 export default function AdminDashboard() {
   const [activeSlice, setActiveSlice] = useState<string | null>(null);
 
-  const handleExport = () => {
-    window.print();
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      await generateAdminPDF();
+    } finally {
+      setExporting(false);
+    }
   };
 
   const sparkTrends = MONTHLY.map(m => m.investment);
@@ -208,9 +216,9 @@ export default function AdminDashboard() {
               <AlertTriangle size={14} />
               Verification Queue
             </a>
-            <button onClick={handleExport}
-              className="flex items-center gap-1.5 bg-[#FF9900] text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-amber-500 transition-colors">
-              <Download size={13} /> Export PDF
+            <button onClick={handleExport} disabled={exporting}
+              className="flex items-center gap-1.5 bg-[#FF9900] text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-amber-500 transition-colors disabled:opacity-60">
+              <Download size={13} /> {exporting ? 'Generating…' : 'Export PDF'}
             </button>
             <a href="/" className="text-white/50 hover:text-white text-sm">← Home</a>
           </>
