@@ -8,12 +8,12 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const RESEND_API_KEY  = Deno.env.get('RESEND_API_KEY')!;
 const PORTAL_URL      = Deno.env.get('PORTAL_URL') ?? 'https://sipcot-track.vercel.app';
-const FROM_EMAIL      = 'SIPCOT TRACK <noreply@sipcottrack.gov.in>';
+const FROM_EMAIL      = 'SIPCOT TRACK <onboarding@resend.dev>';
 
 // ── Supabase admin client (service role — needed to read users table) ─────────
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  Deno.env.get('SERVICE_ROLE_KEY')!
 );
 
 // ── HTML Email Templates ──────────────────────────────────────────────────────

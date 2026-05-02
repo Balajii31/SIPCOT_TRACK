@@ -7,7 +7,7 @@
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!;
 const ADMIN_EMAIL    = Deno.env.get('ADMIN_ALERT_EMAIL') ?? 'admin@sipcottrack.gov.in';
 const PORTAL_URL     = Deno.env.get('PORTAL_URL') ?? 'https://sipcot-track.vercel.app';
-const FROM_EMAIL     = 'SIPCOT TRACK Alerts <alerts@sipcottrack.gov.in>';
+const FROM_EMAIL     = 'SIPCOT TRACK Alerts <onboarding@resend.dev>';
 const WATER_LIMIT    = 1000; // KLD
 const POWER_LIMIT    = 500000; // kWh
 
@@ -154,7 +154,7 @@ Deno.serve(async (req: Request) => {
     const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      Deno.env.get('SERVICE_ROLE_KEY')!
     );
 
     const { data: industry } = await supabase
