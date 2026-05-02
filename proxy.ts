@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-// ── Route access map ──────────────────────────────────────────────────────────
 const ROLE_ROUTES: Record<string, string[]> = {
   '/admin/dashboard':    ['admin'],
   '/admin/verify':       ['admin', 'official'],
@@ -34,8 +33,24 @@ export async function proxy(request: NextRequest) {
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { global: { headers: { Cookie: request.headers.get('cookie') ?? '' } } }
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
+  // Restore session from cookie
+  const cookie = request.cookies.get('sb-iafcqhltfsrkzyipooha-auth-token')?.value;
+  if (cookie) {
+    try {
+      const [access_token, refresh_token] = JSON.parse(decodeURIComponent(cookie));
+      await supabase.auth.setSession({ access_token, refresh_token });
+    } catch (e) {
+      console.error('Failed to parse auth cookie', e);
+    }
+  }
+
+  // Create a privileged client for the profile check to bypass RLS
+  const adminClient = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -48,7 +63,8 @@ export async function proxy(request: NextRequest) {
 
   const allowed = requiredRoles(pathname);
   if (allowed) {
-    const { data: profile } = await supabase
+    // Use adminClient to ensure we can read the profile regardless of RLS
+    const { data: profile } = await adminClient
       .from('profiles')
       .select('role, status')
       .eq('id', user.id)

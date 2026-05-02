@@ -9,6 +9,7 @@ import {
   Loader2, ChevronRight, Lock, Mail, User,
   MapPin, Briefcase, Hash,
 } from 'lucide-react';
+import { useEffect } from 'react';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -46,6 +47,20 @@ export default function AuthForm({ defaultMode = 'login' }: { defaultMode?: Mode
     district: '', department: '',
   });
 
+  // ── Auth Sync ────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        const { access_token, refresh_token } = session;
+        const cookieValue = JSON.stringify([access_token, refresh_token]);
+        document.cookie = `sb-iafcqhltfsrkzyipooha-auth-token=${encodeURIComponent(cookieValue)}; path=/; max-age=3600; SameSite=Lax`;
+      } else {
+        document.cookie = `sb-iafcqhltfsrkzyipooha-auth-token=; path=/; max-age=0; SameSite=Lax`;
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
   const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
 
   // ── Login ────────────────────────────────────────────────────────────────────
@@ -81,7 +96,10 @@ export default function AuthForm({ defaultMode = 'login' }: { defaultMode?: Mode
     }
 
     setLoadingMsg('Redirecting to your dashboard...');
-    router.push(REDIRECT[profile.role as Role] ?? '/');
+    // Small delay to ensure cookie is set
+    setTimeout(() => {
+      router.push(REDIRECT[profile.role as Role] ?? '/');
+    }, 500);
   };
 
   // ── Register ─────────────────────────────────────────────────────────────────
