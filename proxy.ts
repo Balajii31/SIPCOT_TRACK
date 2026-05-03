@@ -11,7 +11,7 @@ const ROLE_ROUTES: Record<string, string[]> = {
 };
 
 const PUBLIC_PATHS = [
-  '/login', '/signup', '/unauthorized',
+  '/', '/login', '/signup', '/unauthorized',
   '/_next', '/favicon.ico', '/api',
 ];
 

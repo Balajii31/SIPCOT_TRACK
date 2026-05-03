@@ -8,6 +8,10 @@ const inter = Inter({ subsets: ['latin'], display: 'swap' })
 export const metadata: Metadata = {
   title: 'SIPCOT TRACK — Government of Tamil Nadu',
   description: 'SIPCOT TRACK: Industrial Data Reporting & Analytics Portal for the Government of Tamil Nadu.',
+  icons: {
+    icon: '/tn_emblem.png',
+    apple: '/tn_emblem.png',
+  },
 }
 
 export default function RootLayout({

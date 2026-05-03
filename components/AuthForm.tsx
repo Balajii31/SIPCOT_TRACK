@@ -31,10 +31,10 @@ const REDIRECT: Record<Role, string> = {
   admin:    '/admin/dashboard',
 };
 
-export default function AuthForm({ defaultMode = 'login' }: { defaultMode?: Mode }) {
+export default function AuthForm({ defaultMode = 'login', forcedRole }: { defaultMode?: Mode; forcedRole?: Role }) {
   const router = useRouter();
   const [mode, setMode]           = useState<Mode>(defaultMode);
-  const [role, setRole]           = useState<Role>('industry');
+  const [role, setRole]           = useState<Role>(forcedRole || 'industry');
   const [showPassword, setShowPw] = useState(false);
   const [loading, setLoading]     = useState(false);
   const [loadingMsg, setLoadingMsg] = useState('');
@@ -150,53 +150,51 @@ export default function AuthForm({ defaultMode = 'login' }: { defaultMode?: Mode
   const selectedRole = ROLES.find(r => r.id === role)!;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4"
-         style={{ background: 'linear-gradient(135deg, #0F172A 0%, #1E3A5F 50%, #0F172A 100%)' }}>
+    <div className="min-h-screen flex items-center justify-center p-6"
+         style={{ background: 'linear-gradient(135deg, #003366 0%, #004d99 60%, #002244 100%)' }}>
 
-      {/* Background shimmer */}
-      <div style={{
-        position: 'fixed', inset: 0, pointerEvents: 'none',
-        background: 'radial-gradient(ellipse at 20% 50%, rgba(59,130,246,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(139,92,246,0.06) 0%, transparent 60%)',
-      }} />
-
-      <div style={{ width: '100%', maxWidth: 480, position: 'relative', zIndex: 1 }}>
+      <div style={{ width: '100%', maxWidth: 520, position: 'relative', zIndex: 1 }}>
 
         {/* Gov Header */}
-        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 10,
-            background: 'rgba(255,153,0,0.12)', border: '1px solid rgba(255,153,0,0.3)',
-            borderRadius: 8, padding: '6px 16px', marginBottom: 14,
+            background: 'rgba(255,153,0,0.15)', border: '1px solid rgba(255,153,0,0.3)',
+            borderRadius: 50, padding: '8px 20px', marginBottom: 20,
           }}>
-            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '1.5px', color: '#FF9900' }}>
+            <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '2px', color: '#FF9900' }}>
               GOVERNMENT OF TAMIL NADU
             </span>
           </div>
-          <h1 style={{ color: '#F8FAFC', fontSize: 26, fontWeight: 800, margin: 0 }}>SIPCOT TRACK</h1>
-          <p style={{ color: '#94A3B8', fontSize: 13, margin: '4px 0 0' }}>
-            Industrial Compliance Management Portal
+          <h1 style={{ color: '#fff', fontSize: 36, fontWeight: 900, margin: 0, letterSpacing: '-0.5px' }}>
+            SIPCOT <span style={{ color: '#FF9900' }}>TRACK</span>
+          </h1>
+          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: 500, margin: '8px 0 0', textTransform: 'uppercase', letterSpacing: '1px' }}>
+            {mode === 'login' ? 'Secure Access Portal' : 'Service Registration'}
           </p>
         </div>
 
         {/* Card */}
         <div style={{
-          background: 'rgba(15,23,42,0.85)', backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16,
-          padding: 32, boxShadow: '0 24px 48px rgba(0,0,0,0.4)',
+          background: '#fff',
+          borderRadius: 24,
+          padding: 40,
+          boxShadow: '0 40px 100px rgba(0,0,0,0.4)',
         }}>
 
           {/* Mode tabs */}
           <div style={{
-            display: 'flex', background: 'rgba(255,255,255,0.05)',
-            borderRadius: 10, padding: 4, marginBottom: 28, gap: 4,
+            display: 'flex', background: '#F1F5F9',
+            borderRadius: 12, padding: 5, marginBottom: 32, gap: 5,
           }}>
             {(['login', 'register'] as Mode[]).map(m => (
               <button key={m} onClick={() => { setMode(m); setError(''); setSuccess(''); }}
                 style={{
-                  flex: 1, padding: '9px 0', borderRadius: 8, border: 'none', cursor: 'pointer',
-                  fontSize: 13, fontWeight: 600, transition: 'all 0.2s',
+                  flex: 1, padding: '12px 0', borderRadius: 9, border: 'none', cursor: 'pointer',
+                  fontSize: 14, fontWeight: 700, transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   background: mode === m ? '#003366' : 'transparent',
                   color: mode === m ? '#fff' : '#64748B',
+                  boxShadow: mode === m ? '0 4px 12px rgba(0,51,102,0.2)' : 'none',
                 }}>
                 {m === 'login' ? 'Sign In' : 'Register'}
               </button>
@@ -206,46 +204,44 @@ export default function AuthForm({ defaultMode = 'login' }: { defaultMode?: Mode
           {/* Error / Success */}
           {error && (
             <div style={{
-              background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)',
-              borderRadius: 8, padding: '10px 14px', marginBottom: 20,
-              color: '#FCA5A5', fontSize: 13,
+              background: '#FEF2F2', border: '1px solid #FEE2E2',
+              borderRadius: 10, padding: '12px 16px', marginBottom: 24,
+              color: '#B91C1C', fontSize: 13, fontWeight: 500,
             }}>{error}</div>
           )}
           {success && (
             <div style={{
-              background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)',
-              borderRadius: 8, padding: '10px 14px', marginBottom: 20,
-              color: '#6EE7B7', fontSize: 13,
+              background: '#F0FDF4', border: '1px solid #DCFCE7',
+              borderRadius: 10, padding: '12px 16px', marginBottom: 24,
+              color: '#15803D', fontSize: 13, fontWeight: 500,
             }}>{success}</div>
           )}
 
           <form onSubmit={mode === 'login' ? handleLogin : handleRegister}>
 
-            {/* Role selector — register only */}
-            {mode === 'register' && (
-              <div style={{ marginBottom: 20 }}>
-                <label style={{ color: '#94A3B8', fontSize: 12, fontWeight: 600, letterSpacing: '0.5px', display: 'block', marginBottom: 10 }}>
-                  USER TYPE
+            {/* Role selector — register only, hide if forced */}
+            {mode === 'register' && !forcedRole && (
+              <div style={{ marginBottom: 28 }}>
+                <label style={{ color: '#475569', fontSize: 12, fontWeight: 700, letterSpacing: '0.5px', display: 'block', marginBottom: 12, textTransform: 'uppercase' }}>
+                  Select Account Type
                 </label>
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 10 }}>
                   {ROLES.map(r => (
                     <button key={r.id} type="button" onClick={() => setRole(r.id)}
                       style={{
-                        flex: 1, padding: '10px 6px', borderRadius: 10, border: 'none', cursor: 'pointer',
-                        background: role === r.id ? `${r.color}18` : 'rgba(255,255,255,0.04)',
-                        outline: role === r.id ? `2px solid ${r.color}60` : '2px solid transparent',
+                        flex: 1, padding: '14px 8px', borderRadius: 14, border: '2px solid transparent', cursor: 'pointer',
+                        background: role === r.id ? '#F8FAFC' : '#fff',
+                        borderColor: role === r.id ? '#FF9900' : '#F1F5F9',
                         transition: 'all 0.2s', textAlign: 'center',
+                        boxShadow: role === r.id ? '0 10px 20px rgba(255,153,0,0.1)' : 'none',
                       }}>
-                      <r.icon size={18} style={{ color: role === r.id ? r.color : '#475569', margin: '0 auto 4px' }} />
-                      <div style={{ fontSize: 10, fontWeight: 700, color: role === r.id ? r.color : '#475569', lineHeight: 1.3 }}>
-                        {r.label}
+                      <r.icon size={22} style={{ color: role === r.id ? '#FF9900' : '#CBD5E1', margin: '0 auto 6px' }} />
+                      <div style={{ fontSize: 11, fontWeight: 800, color: role === r.id ? '#003366' : '#94A3B8', lineHeight: 1.2 }}>
+                        {r.label.split(' ')[1] || r.label}
                       </div>
                     </button>
                   ))}
                 </div>
-                <p style={{ color: '#475569', fontSize: 11, marginTop: 8, textAlign: 'center' }}>
-                  {selectedRole.desc}
-                </p>
               </div>
             )}
 
@@ -260,7 +256,7 @@ export default function AuthForm({ defaultMode = 'login' }: { defaultMode?: Mode
               <>
                 <Field icon={Building2} label="Industry / Company Name" id="industryName" type="text"
                   value={form.industryName} onChange={v => set('industryName', v)} required />
-                <Field icon={Hash} label="Allottee Code (if available)" id="allotteeCode" type="text"
+                <Field icon={Hash} label="Allottee Code" id="allotteeCode" type="text"
                   value={form.allotteeCode} onChange={v => set('allotteeCode', v)} />
               </>
             )}
@@ -278,25 +274,26 @@ export default function AuthForm({ defaultMode = 'login' }: { defaultMode?: Mode
               value={form.email} onChange={v => set('email', v)} required />
 
             {/* Password */}
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ color: '#94A3B8', fontSize: 12, fontWeight: 600, letterSpacing: '0.5px', display: 'block', marginBottom: 6 }}>
-                PASSWORD
+            <div style={{ marginBottom: 24 }}>
+              <label style={{ color: '#475569', fontSize: 12, fontWeight: 700, letterSpacing: '0.5px', display: 'block', marginBottom: 8, textTransform: 'uppercase' }}>
+                Password
               </label>
               <div style={{ position: 'relative' }}>
-                <Lock size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#475569' }} />
+                <Lock size={17} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
                 <input
                   id="password" type={showPassword ? 'text' : 'password'}
                   value={form.password} onChange={e => set('password', e.target.value)}
                   required autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                   style={{
-                    width: '100%', padding: '10px 40px 10px 36px', borderRadius: 8,
-                    background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                    color: '#F1F5F9', fontSize: 14, boxSizing: 'border-box', outline: 'none',
+                    width: '100%', padding: '14px 48px 14px 44px', borderRadius: 12,
+                    background: '#F8FAFC', border: '2px solid #F1F5F9',
+                    color: '#1E293B', fontSize: 15, fontWeight: 500, boxSizing: 'border-box', outline: 'none',
+                    transition: 'all 0.2s',
                   }}
                 />
                 <button type="button" onClick={() => setShowPw(p => !p)}
-                  style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#475569' }}>
-                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                  style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8' }}>
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </div>
@@ -304,45 +301,48 @@ export default function AuthForm({ defaultMode = 'login' }: { defaultMode?: Mode
             {/* Submit */}
             <button type="submit" disabled={loading}
               style={{
-                width: '100%', padding: '12px 0', borderRadius: 10, border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
-                background: loading ? '#1E3A5F' : 'linear-gradient(135deg, #003366 0%, #0055A4 100%)',
-                color: '#fff', fontSize: 14, fontWeight: 700, marginTop: 8,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                transition: 'all 0.2s', opacity: loading ? 0.8 : 1,
+                width: '100%', padding: '16px 0', borderRadius: 14, border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
+                background: loading ? '#64748B' : '#003366',
+                color: '#fff', fontSize: 15, fontWeight: 800, marginTop: 12,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                transition: 'all 0.3s', boxShadow: '0 10px 30px rgba(0,51,102,0.2)',
+                textTransform: 'uppercase', letterSpacing: '1px',
               }}>
               {loading ? (
                 <>
-                  <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                  <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />
                   {loadingMsg}
                 </>
               ) : (
                 <>
-                  {mode === 'login' ? 'Sign In to Portal' : 'Create Account'}
-                  <ChevronRight size={16} />
+                  {mode === 'login' ? 'Enter Portal' : 'Create Secure Account'}
+                  <ChevronRight size={18} />
                 </>
               )}
             </button>
           </form>
 
           {/* Switch mode */}
-          <p style={{ textAlign: 'center', color: '#475569', fontSize: 13, marginTop: 20 }}>
-            {mode === 'login' ? "Don't have an account? " : 'Already registered? '}
-            <button onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(''); setSuccess(''); }}
-              style={{ background: 'none', border: 'none', color: '#60A5FA', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
-              {mode === 'login' ? 'Register' : 'Sign In'}
-            </button>
-          </p>
+          <div style={{ textAlign: 'center', marginTop: 32, paddingTop: 24, borderTop: '1px solid #F1F5F9' }}>
+            <p style={{ color: '#64748B', fontSize: 14, fontWeight: 500 }}>
+              {mode === 'login' ? "New industrial partner? " : 'Existing account? '}
+              <button onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(''); setSuccess(''); }}
+                style={{ background: 'none', border: 'none', color: '#FF9900', cursor: 'pointer', fontWeight: 800, fontSize: 14, textDecoration: 'underline', padding: '0 4px' }}>
+                {mode === 'login' ? 'Register Now' : 'Sign In'}
+              </button>
+            </p>
+          </div>
         </div>
 
         {/* Footer */}
-        <p style={{ textAlign: 'center', color: '#334155', fontSize: 11, marginTop: 20 }}>
-          SIPCOT TRACK &nbsp;|&nbsp; Government of Tamil Nadu &nbsp;|&nbsp; Secure Portal
+        <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: 12, marginTop: 32, fontWeight: 500 }}>
+          SIPCOT TRACK · Secure Infrastructure Monitoring · TN GOV
         </p>
       </div>
 
       <style>{`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        input:focus { border-color: rgba(59,130,246,0.5) !important; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+        input:focus { border-color: #FF9900 !important; background: #fff !important; box-shadow: 0 0 0 4px rgba(255,153,0,0.1) !important; }
       `}</style>
     </div>
   );
@@ -354,19 +354,19 @@ function Field({ icon: Icon, label, id, type, value, onChange, required }: {
   value: string; onChange: (v: string) => void; required?: boolean;
 }) {
   return (
-    <div style={{ marginBottom: 16 }}>
-      <label htmlFor={id} style={{ color: '#94A3B8', fontSize: 12, fontWeight: 600, letterSpacing: '0.5px', display: 'block', marginBottom: 6 }}>
-        {label.toUpperCase()}
+    <div style={{ marginBottom: 20 }}>
+      <label htmlFor={id} style={{ color: '#475569', fontSize: 12, fontWeight: 700, letterSpacing: '0.5px', display: 'block', marginBottom: 8, textTransform: 'uppercase' }}>
+        {label}
       </label>
       <div style={{ position: 'relative' }}>
-        <Icon size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#475569' }} />
+        <Icon size={17} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
         <input
           id={id} type={type} value={value} required={required}
           onChange={e => onChange(e.target.value)}
           style={{
-            width: '100%', padding: '10px 12px 10px 36px', borderRadius: 8, boxSizing: 'border-box',
-            background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-            color: '#F1F5F9', fontSize: 14, outline: 'none', transition: 'border-color 0.2s',
+            width: '100%', padding: '14px 16px 14px 44px', borderRadius: 12, boxSizing: 'border-box',
+            background: '#F8FAFC', border: '2px solid #F1F5F9',
+            color: '#1E293B', fontSize: 15, fontWeight: 500, outline: 'none', transition: 'all 0.2s',
           }}
         />
       </div>

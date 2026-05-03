@@ -11,6 +11,7 @@ import {
   AlertTriangle, Download, RefreshCw,
 } from 'lucide-react';
 import { BrandHeader } from '@/components/BrandHeader';
+import { UserNav } from '@/components/UserNav';
 import dynamic from 'next/dynamic';
 import type { ParkData } from '@/components/ParkMap';
 import { generateAdminPDF } from '@/lib/adminPdfExport';
@@ -220,7 +221,8 @@ export default function AdminDashboard() {
               className="flex items-center gap-1.5 bg-[#FF9900] text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-amber-500 transition-colors disabled:opacity-60">
               <Download size={13} /> {exporting ? 'Generating…' : 'Export PDF'}
             </button>
-            <a href="/" className="text-white/50 hover:text-white text-sm">← Home</a>
+            <div className="w-px h-6 bg-white/10 mx-1" />
+            <UserNav />
           </>
         }
       />

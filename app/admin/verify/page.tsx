@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { BrandHeader } from '@/components/BrandHeader';
+import { UserNav } from '@/components/UserNav';
 import { supabase, type VerificationItem, type ReportStatus } from '@/lib/supabase';
 
 type FilterType = 'all' | ReportStatus;
@@ -103,6 +104,8 @@ export default function AdminVerifyPage() {
             <Link href="/" className="text-white/60 hover:text-white text-sm transition-colors">
               Home
             </Link>
+            <div className="w-px h-6 bg-white/10 mx-1" />
+            <UserNav />
           </>
         }
       />

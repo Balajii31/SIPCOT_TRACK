@@ -9,6 +9,7 @@ import { BrandHeader } from '@/components/BrandHeader';
 import { supabase, type Industry } from '@/lib/supabase';
 import toast from 'react-hot-toast';
 import { Download } from 'lucide-react';
+import { UserNav } from '@/components/UserNav';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface FormData {
@@ -53,40 +54,47 @@ export default function AllotteeUpdatePage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  // Industries from DB (demo mode: list all industries)
-  const [industries, setIndustries] = useState<Industry[]>([]);
-  const [selectedIndustryId, setSelectedIndustryId] = useState<string>('');
-  const [selectedIndustryName, setSelectedIndustryName] = useState<string>('');
-  const [industriesLoading, setIndustriesLoading] = useState(true);
-
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState<FormData>(EMPTY_FORM);
+  const [userIndustry, setUserIndustry] = useState<{ id: string; name: string } | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
   const set = (key: keyof FormData, value: string | File | null) =>
     setForm(prev => ({ ...prev, [key]: value }));
 
-  // Load industries from Supabase
+  // Load current user's industry
   useEffect(() => {
-    async function loadIndustries() {
+    async function loadUserIndustry() {
       try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          toast.error('Session expired. Please login again.');
+          return;
+        }
+
+        // Check industries table for matching user_id
         const { data, error } = await supabase
           .from('industries')
-          .select('*')
-          .eq('is_active', true)
-          .order('name');
+          .select('id, name')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
         if (error) throw error;
-        setIndustries(data ?? []);
-        if (data && data.length > 0) {
-          setSelectedIndustryId(data[0].id);
-          setSelectedIndustryName(data[0].name);
+
+        if (data) {
+          setUserIndustry(data);
+        } else {
+          // If no linked industry, check if we have demo data
+          // In a real app, we'd redirect to onboarding
+          toast.error('No industry linked to your account.');
         }
       } catch (err: any) {
-        toast.error('Could not load industries: ' + err.message);
+        toast.error('Error identifying industry: ' + err.message);
       } finally {
-        setIndustriesLoading(false);
+        setAuthLoading(false);
       }
     }
-    loadIndustries();
+    loadUserIndustry();
   }, []);
 
   const validateStep = (): boolean => {
@@ -110,7 +118,7 @@ export default function AllotteeUpdatePage() {
 
   const handleSubmit = async () => {
     if (!validateStep()) return;
-    if (!selectedIndustryId) { toast.error('Please select an industry.'); return; }
+    if (!userIndustry) { toast.error('Account not authorized for submission.'); return; }
 
     setSubmitting(true);
     const loadingToast = toast.loading('Submitting report…');
@@ -123,7 +131,7 @@ export default function AllotteeUpdatePage() {
       let csr_file_url: string | null = null;
       if (form.csr_file) {
         const ext = form.csr_file.name.split('.').pop();
-        const path = `${selectedIndustryId}/${year}-${month}-csr.${ext}`;
+        const path = `${userIndustry.id}/${year}-${month}-csr.${ext}`;
         const { error: uploadError } = await supabase.storage
           .from('csr-documents')
           .upload(path, form.csr_file, { upsert: true });
@@ -137,7 +145,7 @@ export default function AllotteeUpdatePage() {
         .from('monthly_reports')
         .upsert(
           {
-            industry_id:     selectedIndustryId,
+            industry_id:     userIndustry.id,
             month,
             year,
             investment_cr:   parseFloat(form.investment_cr),
@@ -183,9 +191,7 @@ export default function AllotteeUpdatePage() {
 
     // ── Helpers ───────────────────────────────────────────────────────────────
     const refId = 'SIPCOT-' + Date.now().toString(36).toUpperCase().slice(-8);
-    const submissionDate = new Date().toLocaleDateString('en-IN', {
-      day: '2-digit', month: 'long', year: 'numeric',
-    });
+    const submissionDate = new Date().toLocaleDateString('en-IN');
     const reportMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
 
     // Safe number formatter — avoids jsPDF character-spacing bugs from locale strings
@@ -288,7 +294,7 @@ export default function AllotteeUpdatePage() {
       },
       body: [
         ['Reference ID', refId],
-        ['Allottee / Industry', selectedIndustryName || 'N/A'],
+        ['Allottee / Industry', userIndustry?.name || 'N/A'],
         ['Reporting Period', reportMonth],
         ['Submission Date', submissionDate],
         ['Filing Status', 'PENDING VERIFICATION'],
@@ -499,40 +505,39 @@ export default function AllotteeUpdatePage() {
       <BrandHeader
         subtitle="Industry Data Submission"
         rightContent={
-          <Link href="/" className="text-white/60 hover:text-white text-sm transition-colors flex items-center gap-1">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Back
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link href="/" className="text-white/60 hover:text-white text-sm transition-colors flex items-center gap-1">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back
+            </Link>
+            <div className="w-px h-6 bg-white/10 mx-2" />
+            <UserNav />
+          </div>
         }
       />
 
       <div className="max-w-3xl mx-auto px-6 py-10">
-        {/* Industry Selector */}
-        <div className="bg-[#FF9900]/10 border border-[#FF9900]/40 rounded-xl px-5 py-3 mb-8 flex items-center gap-3 flex-wrap">
-          <span className="text-[#FF9900] font-bold text-sm">DEMO MODE</span>
-          <span className="text-gray-600 text-sm">Reporting for:</span>
-          {industriesLoading ? (
-            <div className="h-8 w-48 bg-gray-200 rounded-lg animate-pulse" />
-          ) : industries.length === 0 ? (
-            <span className="text-red-600 text-sm font-semibold">
-              No industries in database. Add records to the <code>industries</code> table first.
-            </span>
-          ) : (
-            <select
-              value={selectedIndustryId}
-              onChange={e => {
-                setSelectedIndustryId(e.target.value);
-                const ind = industries.find(i => i.id === e.target.value);
-                setSelectedIndustryName(ind?.name ?? '');
-              }}
-              className="text-sm font-semibold text-[#003366] border border-[#003366]/30 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#003366]"
-            >
-              {industries.map(ind => (
-                <option key={ind.id} value={ind.id}>{ind.name}</option>
-              ))}
-            </select>
+        {/* Industry Info */}
+        <div className="bg-[#003366]/5 border border-[#003366]/20 rounded-xl px-5 py-3 mb-8 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-[#003366] flex items-center justify-center text-white font-bold">
+              {userIndustry?.name.charAt(0) || 'I'}
+            </div>
+            <div>
+              <span className="text-gray-500 text-[10px] uppercase font-bold tracking-wider block">Logged in Industry</span>
+              <span className="text-[#003366] font-bold">{userIndustry?.name || (authLoading ? 'Loading...' : 'Not Found')}</span>
+            </div>
+          </div>
+          {userIndustry && (
+            <div className="text-right">
+              <span className="text-green-600 font-bold text-xs flex items-center gap-1 justify-end">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                Verified Account
+              </span>
+              <span className="text-gray-400 text-[10px] block mt-0.5">ID: {userIndustry.id.slice(0,8).toUpperCase()}</span>
+            </div>
           )}
         </div>
 
@@ -779,14 +784,15 @@ export default function AllotteeUpdatePage() {
             {step < 4 ? (
               <button
                 onClick={next}
-                className="px-8 py-2.5 bg-[#003366] text-white rounded-xl font-semibold text-sm hover:bg-[#004d99] transition-colors"
+                disabled={authLoading || !userIndustry}
+                className="px-8 py-2.5 bg-[#003366] text-white rounded-xl font-semibold text-sm hover:bg-[#004d99] transition-colors disabled:opacity-50"
               >
                 Next Step →
               </button>
             ) : (
               <button
                 onClick={handleSubmit}
-                disabled={submitting || !selectedIndustryId}
+                disabled={submitting || !userIndustry}
                 className="px-8 py-2.5 bg-[#FF9900] text-white rounded-xl font-bold text-sm hover:bg-[#e68a00] transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {submitting ? (

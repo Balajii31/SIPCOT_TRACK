@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { BrandHeader } from '@/components/BrandHeader';
+import { UserNav } from '@/components/UserNav';
 import Link from 'next/link';
 
 const supabase = createClient(
@@ -80,15 +82,20 @@ export default function IndustryDashboard() {
   }
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">Industry Dashboard</h1>
-        {profile && (
-          <p className="text-muted-foreground">
-            {profile.company_name} • {profile.sector}
-          </p>
-        )}
-      </div>
+    <div className="min-h-screen bg-slate-50">
+      <BrandHeader 
+        subtitle="Industry Portal" 
+        rightContent={<UserNav />}
+      />
+      <div className="p-8 max-w-6xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-foreground mb-2">Industry Dashboard</h1>
+          {profile && (
+            <p className="text-muted-foreground">
+              {profile.company_name} • {profile.sector}
+            </p>
+          )}
+        </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <Card className="p-6">
