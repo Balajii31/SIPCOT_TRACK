@@ -9,7 +9,7 @@ import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { BrandHeader } from '@/components/BrandHeader';
 import { UserNav } from '@/components/UserNav';
-import { supabase, type VerificationItem, type ReportStatus } from '@/lib/supabase';
+import { supabase, recordAuditLog, type VerificationItem, type ReportStatus } from '@/lib/supabase';
 
 type FilterType = 'all' | ReportStatus;
 
@@ -81,6 +81,16 @@ export default function AdminVerifyPage() {
       } else {
         toast.error('Report rejected.');
       }
+
+      // ── Audit Log ───────────────────────────────────────────────────────────
+      const oldItem = items.find(i => i.id === id);
+      await recordAuditLog({
+        action: `report.${action}`,
+        entity_type: 'monthly_report',
+        entity_id: id,
+        old_values: { status: oldItem?.status },
+        new_values: { status: action },
+      });
     } catch (err: any) {
       toast.error(`Action failed: ${err.message}`);
     } finally {

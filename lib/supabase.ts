@@ -146,3 +146,31 @@ export type VerificationItem = {
   verified_at: string | null;
   verified_by_name: string | null;
 };
+
+// ── Audit Logging Helper ──────────────────────────────────────────────────────
+export async function recordAuditLog(log: {
+  action: string;
+  entity_type: 'monthly_report' | 'user' | 'industry' | 'park';
+  entity_id: string;
+  old_values?: any;
+  new_values?: any;
+}) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  try {
+    const { error } = await supabase
+      .from('audit_logs')
+      .insert([{
+        user_id: user.id,
+        action: log.action,
+        entity_type: log.entity_type,
+        entity_id: log.entity_id,
+        old_values: log.old_values,
+        new_values: log.new_values,
+      }]);
+    if (error) console.error('Audit log failed:', error);
+  } catch (err) {
+    console.error('Audit log exception:', err);
+  }
+}

@@ -1,14 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { supabase, recordAuditLog } from '@/lib/supabase';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 interface User {
   id: string;
@@ -32,7 +27,7 @@ export default function UsersPage() {
   async function loadUsers() {
     try {
       const { data } = await supabase
-        .from('users')
+        .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -48,12 +43,20 @@ export default function UsersPage() {
     setActionLoading(userId);
     try {
       const { error } = await supabase
-        .from('users')
-        .update({ status: 'approved' })
+        .from('profiles')
+        .update({ status: 'active' })
         .eq('id', userId);
 
       if (!error) {
         await loadUsers();
+        // ── Audit Log ─────────────────────────────────────────────────────────
+        await recordAuditLog({
+          action: 'user.approved',
+          entity_type: 'user',
+          entity_id: userId,
+          old_values: { status: 'pending' },
+          new_values: { status: 'active' },
+        });
       }
     } catch (error) {
       console.error('Error approving user:', error);
@@ -66,12 +69,20 @@ export default function UsersPage() {
     setActionLoading(userId);
     try {
       const { error } = await supabase
-        .from('users')
+        .from('profiles')
         .update({ status: 'rejected' })
         .eq('id', userId);
 
       if (!error) {
         await loadUsers();
+        // ── Audit Log ─────────────────────────────────────────────────────────
+        await recordAuditLog({
+          action: 'user.rejected',
+          entity_type: 'user',
+          entity_id: userId,
+          old_values: { status: 'pending' },
+          new_values: { status: 'rejected' },
+        });
       }
     } catch (error) {
       console.error('Error rejecting user:', error);
@@ -84,7 +95,7 @@ export default function UsersPage() {
     switch (status) {
       case 'pending':
         return 'bg-yellow-500/20 text-yellow-700 dark:text-yellow-400';
-      case 'approved':
+      case 'active':
         return 'bg-green-500/20 text-green-700 dark:text-green-400';
       case 'rejected':
         return 'bg-destructive/20 text-destructive';

@@ -25,6 +25,17 @@ const ROLES: { id: Role; label: string; desc: string; icon: any; color: string }
   { id: 'admin',     label: 'HQ Administrator',  desc: 'Full system access & analytics',    icon: UserCog,   color: '#8B5CF6' },
 ];
 
+const DISTRICTS = [
+  'Chennai', 'Kancheepuram', 'Thiruvallur', 'Krishnagiri', 'Coimbatore', 
+  'Madurai', 'Erode', 'Ranipet', 'Cuddalore', 'Thoothukudi', 'Vellore',
+  'Trichy', 'Salem', 'Tiruppur', 'Dharmapuri', 'Chengalpattu'
+].sort();
+
+const DEPARTMENTS = [
+  'Projects', 'Planning', 'Land Acquisition', 'Finance', 'Environmental',
+  'IT & Smart Cities', 'Legal', 'Administration', 'District Office'
+].sort();
+
 const REDIRECT: Record<Role, string> = {
   industry: '/allottee/update',
   official: '/admin/verify',
@@ -262,10 +273,10 @@ export default function AuthForm({ defaultMode = 'login', forcedRole }: { defaul
             )}
             {mode === 'register' && role === 'official' && (
               <>
-                <Field icon={MapPin} label="District" id="district" type="text"
-                  value={form.district} onChange={v => set('district', v)} required />
-                <Field icon={Briefcase} label="Department" id="department" type="text"
-                  value={form.department} onChange={v => set('department', v)} required />
+                <SelectField icon={MapPin} label="District" id="district" 
+                  options={DISTRICTS} value={form.district} onChange={v => set('district', v)} required />
+                <SelectField icon={Briefcase} label="Department" id="department" 
+                  options={DEPARTMENTS} value={form.department} onChange={v => set('department', v)} required />
               </>
             )}
 
@@ -369,6 +380,41 @@ function Field({ icon: Icon, label, id, type, value, onChange, required }: {
             color: '#1E293B', fontSize: 15, fontWeight: 500, outline: 'none', transition: 'all 0.2s',
           }}
         />
+      </div>
+    </div>
+  );
+}
+
+// ── Select field ──────────────────────────────────────────────────────────────
+function SelectField({ icon: Icon, label, id, options, value, onChange, required }: {
+  icon: any; label: string; id: string; options: string[];
+  value: string; onChange: (v: string) => void; required?: boolean;
+}) {
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <label htmlFor={id} style={{ color: '#475569', fontSize: 12, fontWeight: 700, letterSpacing: '0.5px', display: 'block', marginBottom: 8, textTransform: 'uppercase' }}>
+        {label}
+      </label>
+      <div style={{ position: 'relative' }}>
+        <Icon size={17} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', pointerEvents: 'none' }} />
+        <select
+          id={id} value={value} required={required}
+          onChange={e => onChange(e.target.value)}
+          style={{
+            width: '100%', padding: '14px 16px 14px 44px', borderRadius: 12, boxSizing: 'border-box',
+            background: '#F8FAFC', border: '2px solid #F1F5F9',
+            color: '#1E293B', fontSize: 15, fontWeight: 500, outline: 'none', transition: 'all 0.2s',
+            appearance: 'none', cursor: 'pointer',
+          }}
+        >
+          <option value="">Select {label}</option>
+          {options.map(opt => (
+            <option key={opt} value={opt}>{opt}</option>
+          ))}
+        </select>
+        <div style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#94A3B8' }}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </div>
       </div>
     </div>
   );

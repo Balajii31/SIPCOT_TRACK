@@ -217,6 +217,11 @@ export default function AdminDashboard() {
               <AlertTriangle size={14} />
               Verification Queue
             </a>
+            <a href="/dashboard/admin/users"
+              className="text-white/80 hover:text-[#FF9900] text-sm font-medium transition-colors flex items-center gap-1.5">
+              <Users size={14} />
+              User Management
+            </a>
             <button onClick={handleExport} disabled={exporting}
               className="flex items-center gap-1.5 bg-[#FF9900] text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-amber-500 transition-colors disabled:opacity-60">
               <Download size={13} /> {exporting ? 'Generating…' : 'Export PDF'}
