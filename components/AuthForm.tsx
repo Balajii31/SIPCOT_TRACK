@@ -147,6 +147,22 @@ export default function AuthForm({ defaultMode = 'login', forcedRole }: { defaul
         district:      form.district     || null,
         department:    form.department   || null,
       });
+
+      // Link to industry if allottee code matches
+      if (role === 'industry' && form.allotteeCode) {
+        const { data: ind } = await supabase
+          .from('industries')
+          .select('id')
+          .eq('allottee_code', form.allotteeCode)
+          .maybeSingle();
+        
+        if (ind) {
+          await supabase
+            .from('industries')
+            .update({ user_id: data.user.id })
+            .eq('id', ind.id);
+        }
+      }
     }
 
     setLoading(false);

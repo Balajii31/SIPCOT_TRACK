@@ -1,20 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, PieChart, Pie, Cell, LineChart, Legend,
+  ResponsiveContainer, PieChart, Pie, Cell, LineChart,
 } from 'recharts';
 import {
   TrendingUp, TrendingDown, Users, Droplets, Leaf, Building2,
-  AlertTriangle, Download, RefreshCw,
+  AlertTriangle, Download, Loader2,
 } from 'lucide-react';
 import { BrandHeader } from '@/components/BrandHeader';
 import { UserNav } from '@/components/UserNav';
 import dynamic from 'next/dynamic';
 import type { ParkData } from '@/components/ParkMap';
 import { generateAdminPDF } from '@/lib/adminPdfExport';
+import { supabase, type ParkSummary } from '@/lib/supabase';
 
 const ParkMap = dynamic(() => import('@/components/ParkMap'), { ssr: false });
 
@@ -27,63 +28,22 @@ const C = {
   slate:   '#64748B',
 };
 
-// ── Mock Data (follows schema) ────────────────────────────────────────────────
-const MONTHLY = [
-  { month:'Apr',investment:820, employment:18200,water:6200,csr:24},
-  { month:'May',investment:910, employment:19100,water:6800,csr:28},
-  { month:'Jun',investment:870, employment:18700,water:7100,csr:22},
-  { month:'Jul',investment:980, employment:20400,water:6900,csr:31},
-  { month:'Aug',investment:1050,employment:21800,water:7400,csr:35},
-  { month:'Sep',investment:990, employment:21000,water:7000,csr:29},
-  { month:'Oct',investment:1120,employment:22500,water:7600,csr:38},
-  { month:'Nov',investment:1080,employment:22000,water:7300,csr:36},
-  { month:'Dec',investment:1200,employment:23800,water:8100,csr:42},
-  { month:'Jan',investment:1150,employment:23000,water:7900,csr:40},
-  { month:'Feb',investment:1300,employment:24500,water:8400,csr:45},
-  { month:'Mar',investment:1420,employment:25800,water:8900,csr:51},
-];
+const CHART_COLORS = ['#003366', '#10B981', '#F59E0B', '#8B5CF6', '#94A3B8', '#EC4899', '#06B6D4'];
 
-const SECTORS = [
-  { name:'Automobile',  value:38, color:'#003366' },
-  { name:'IT/Electronics', value:24, color:'#10B981' },
-  { name:'Pharma',      value:19, color:'#F59E0B' },
-  { name:'Textiles',    value:12, color:'#8B5CF6' },
-  { name:'Others',      value:7,  color:'#94A3B8' },
-];
+// ── Types ───────────────────────────────────────────────────────────────────
+interface MonthlyData {
+  month: string;
+  investment: number;
+  employment: number;
+  water: number;
+  csr: number;
+  sortKey: number; // For sorting months correctly
+}
 
-const PARKS_MAP: ParkData[] = [
-  { id:'p1', name:'Hosur I',          lat:12.7409, lng:77.8253, water_kld:1240, investment_cr:4500, total_jobs:28500 },
-  { id:'p2', name:'Hosur II',         lat:12.7209, lng:77.8353, water_kld:820,  investment_cr:3200, total_jobs:19800 },
-  { id:'p3', name:'Sriperumbudur',    lat:12.9694, lng:79.9481, water_kld:1560, investment_cr:7800, total_jobs:42000 },
-  { id:'p4', name:'Oragadam',         lat:12.8230, lng:79.9866, water_kld:680,  investment_cr:5600, total_jobs:35000 },
-  { id:'p5', name:'Coimbatore SIDCO', lat:11.0168, lng:76.9558, water_kld:430,  investment_cr:1800, total_jobs:12000 },
-  { id:'p6', name:'Madurai',          lat:9.9252,  lng:78.1198, water_kld:290,  investment_cr:960,  total_jobs:7800  },
-  { id:'p7', name:'Gummidipoondi',    lat:13.4070, lng:80.1195, water_kld:1100, investment_cr:2900, total_jobs:16500 },
-  { id:'p8', name:'Ranipet',          lat:12.9298, lng:79.3334, water_kld:375,  investment_cr:1450, total_jobs:9200  },
-  { id:'p9', name:'Cuddalore',        lat:11.7447, lng:79.7681, water_kld:2100, investment_cr:6200, total_jobs:31000 },
-  { id:'p10',name:'Perundurai',       lat:11.2762, lng:77.5806, water_kld:540,  investment_cr:2100, total_jobs:14200 },
-];
-
-const WATER_ALERTS = PARKS_MAP.filter(p => p.water_kld > 1000);
-
-const SPARKLINE = [42,45,40,50,48,55,58,54,60,62,59,65];
-
-// Employment breakdown for Gender Parity
-const EMP = { male:14200, female:7800, contractual:3800 };
-const EMP_TOTAL = EMP.male + EMP.female + EMP.contractual;
-
-// ── Helper calcs ──────────────────────────────────────────────────────────────
-const latest = MONTHLY[MONTHLY.length - 1];
-const prev    = MONTHLY[MONTHLY.length - 2];
-const totalInvestment = MONTHLY.reduce((s,m) => s + m.investment, 0);
-const totalWater      = latest.water;
-const totalCSR        = MONTHLY.reduce((s,m) => s + m.csr, 0);
-const waterEfficiency = ((latest.investment * 100) / latest.water).toFixed(1);
-const genderParity    = ((EMP.female / EMP_TOTAL) * 100).toFixed(1);
-const capitalIntensity= ((totalInvestment * 10) / latest.employment).toFixed(2); // ₹L per employee
-
-function pct(a: number, b: number) {
-  return (((a - b) / b) * 100).toFixed(1);
+interface SectorData {
+  name: string;
+  value: number;
+  color: string;
 }
 
 // ── Animation variants ────────────────────────────────────────────────────────
@@ -112,7 +72,10 @@ function KPICard({
   icon: any; title: string; value: string; sub: string;
   trend: string; sparkData: number[]; color: string; delay: number;
 }) {
-  const up = !trend.startsWith('-');
+  const trendNum = parseFloat(trend);
+  const isZero = trendNum === 0 || isNaN(trendNum);
+  const up = trendNum > 0;
+  
   return (
     <motion.div {...fadeUp(delay)}
       className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex flex-col gap-3"
@@ -124,15 +87,17 @@ function KPICard({
           </div>
           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{title}</span>
         </div>
-        <span className={`flex items-center gap-0.5 text-xs font-bold ${up ? 'text-emerald-600' : 'text-red-500'}`}>
-          {up ? <TrendingUp size={12} /> : <TrendingDown size={12} />} {trend}%
-        </span>
+        {!isZero && (
+          <span className={`flex items-center gap-0.5 text-xs font-bold ${up ? 'text-emerald-600' : 'text-red-500'}`}>
+            {up ? <TrendingUp size={12} /> : <TrendingDown size={12} />} {Math.abs(trendNum)}%
+          </span>
+        )}
       </div>
       <div>
         <p className="text-2xl font-extrabold text-slate-800">{value}</p>
         <p className="text-xs text-slate-400 mt-0.5">{sub}</p>
       </div>
-      <Sparkline data={sparkData} />
+      <Sparkline data={sparkData.length > 0 ? sparkData : [0, 0, 0]} />
     </motion.div>
   );
 }
@@ -180,10 +145,10 @@ function InvestmentTooltip({ active, payload, label }: any) {
   return (
     <div className="bg-white border border-slate-200 rounded-xl shadow-lg p-3 text-xs">
       <p className="font-bold text-slate-700 mb-2">{label}</p>
-      <p className="text-[#003366]">Investment: <strong>₹{inv} Cr</strong></p>
+      <p className="text-[#003366]">Investment: <strong>₹{inv.toFixed(1)} Cr</strong></p>
       <p className="text-emerald-600">Employment: <strong>{emp.toLocaleString()}</strong></p>
       <p className="text-amber-600 mt-1 border-t border-slate-100 pt-1">
-        Inv/Employee: <strong>₹{((inv * 10000000) / emp).toFixed(0)}</strong>
+        Inv/Employee: <strong>₹{emp > 0 ? ((inv * 10000000) / emp).toFixed(0) : 0}</strong>
       </p>
     </div>
   );
@@ -191,9 +156,82 @@ function InvestmentTooltip({ active, payload, label }: any) {
 
 // ── Main Dashboard ────────────────────────────────────────────────────────────
 export default function AdminDashboard() {
+  const [loading, setLoading] = useState(true);
+  const [parks, setParks] = useState<ParkSummary[]>([]);
+  const [monthly, setMonthly] = useState<MonthlyData[]>([]);
+  const [sectors, setSectors] = useState<SectorData[]>([]);
   const [activeSlice, setActiveSlice] = useState<string | null>(null);
-
   const [exporting, setExporting] = useState(false);
+
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true);
+      try {
+        // 1. Fetch Park Summary
+        const { data: parkData } = await supabase.from('park_summary').select('*');
+        if (parkData) setParks(parkData);
+
+        // 2. Fetch Monthly Aggregates
+        // We'll fetch all approved/pending reports from the last 12 months
+        const { data: reports } = await supabase
+          .from('verification_queue')
+          .select('month, year, investment_cr, emp_total, water_kld, csr_spend_lakhs, sector')
+          .neq('status', 'rejected');
+
+        if (reports) {
+          // Process Monthly Data
+          const monthMap: Record<string, MonthlyData> = {};
+          const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          
+          reports.forEach(r => {
+            const key = `${monthNames[r.month - 1]} ${r.year}`;
+            if (!monthMap[key]) {
+              monthMap[key] = {
+                month: key,
+                investment: 0,
+                employment: 0,
+                water: 0,
+                csr: 0,
+                sortKey: r.year * 100 + r.month
+              };
+            }
+            monthMap[key].investment += Number(r.investment_cr || 0);
+            monthMap[key].employment += Number(r.emp_total || 0);
+            monthMap[key].water      += Number(r.water_kld || 0);
+            monthMap[key].csr        += Number(r.csr_spend_lakhs || 0);
+          });
+
+          const monthlyList = Object.values(monthMap).sort((a, b) => a.sortKey - b.sortKey);
+          setMonthly(monthlyList);
+
+          // Process Sector Data
+          const sectorMap: Record<string, number> = {};
+          reports.forEach(r => {
+            if (!r.sector) return;
+            sectorMap[r.sector] = (sectorMap[r.sector] || 0) + Number(r.investment_cr || 0);
+          });
+
+          const totalInv = Object.values(sectorMap).reduce((a, b) => a + b, 0);
+          const sectorList = Object.entries(sectorMap)
+            .map(([name, val], i) => ({
+              name,
+              value: totalInv > 0 ? Math.round((val / totalInv) * 100) : 0,
+              color: CHART_COLORS[i % CHART_COLORS.length]
+            }))
+            .sort((a, b) => b.value - a.value);
+          
+          setSectors(sectorList);
+        }
+
+      } catch (err) {
+        console.error('Failed to fetch dashboard data:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+  }, []);
 
   const handleExport = async () => {
     setExporting(true);
@@ -204,7 +242,55 @@ export default function AdminDashboard() {
     }
   };
 
-  const sparkTrends = MONTHLY.map(m => m.investment);
+  // ── Derived Stats ────────────────────────────────────────────────────────────
+  const totals = useMemo(() => {
+    const totalInv   = parks.reduce((s, p) => s + (p.total_investment_cr || 0), 0);
+    const totalJobs  = parks.reduce((s, p) => s + (p.total_jobs || 0), 0);
+    const totalWater = parks.reduce((s, p) => s + (p.total_water_kld || 0), 0);
+    const totalCSR   = parks.reduce((s, p) => s + (p.total_csr_spend_lakhs || 0), 0);
+    
+    // Growth trends (comparing last 2 months if available)
+    let invTrend = '0';
+    let jobTrend = '0';
+    let waterTrend = '0';
+    let csrTrend = '0';
+
+    if (monthly.length >= 2) {
+      const latest = monthly[monthly.length - 1];
+      const prev   = monthly[monthly.length - 2];
+      
+      const calcPct = (curr: number, old: number) => 
+        old > 0 ? (((curr - old) / old) * 100).toFixed(1) : '0';
+
+      invTrend   = calcPct(latest.investment, prev.investment);
+      jobTrend   = calcPct(latest.employment, prev.employment);
+      waterTrend = calcPct(latest.water, prev.water);
+      csrTrend   = calcPct(latest.csr, prev.csr);
+    }
+
+    return { totalInv, totalJobs, totalWater, totalCSR, invTrend, jobTrend, waterTrend, csrTrend };
+  }, [parks, monthly]);
+
+  const waterAlerts = parks.filter(p => p.has_water_alert || p.total_water_kld > 1000);
+
+  const parkMapData: ParkData[] = parks.map(p => ({
+    id: p.park_id,
+    name: p.park_name,
+    lat: p.latitude,
+    lng: p.longitude,
+    water_kld: p.total_water_kld,
+    investment_cr: p.total_investment_cr,
+    total_jobs: p.total_jobs,
+  }));
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-4">
+        <Loader2 className="w-10 h-10 text-[#003366] animate-spin" />
+        <p className="text-slate-500 font-medium animate-pulse">Aggregating State-Wide Intelligence...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -216,6 +302,9 @@ export default function AdminDashboard() {
               className="text-white/80 hover:text-[#FF9900] text-sm font-medium transition-colors flex items-center gap-1.5">
               <AlertTriangle size={14} />
               Verification Queue
+              {parks.some(p => p.pending_reports > 0) && (
+                <span className="w-2 h-2 rounded-full bg-[#FF9900] animate-pulse" />
+              )}
             </a>
             <a href="/dashboard/admin/users"
               className="text-white/80 hover:text-[#FF9900] text-sm font-medium transition-colors flex items-center gap-1.5">
@@ -243,17 +332,17 @@ export default function AdminDashboard() {
         {/* ── I. KPI Scorecards ─────────────────────────────────────────── */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <KPICard icon={TrendingUp}  title="Total Investment"   delay={0.05}
-            value={`₹${totalInvestment.toLocaleString()} Cr`} sub="Cumulative FY 2024-25"
-            trend={pct(latest.investment, prev.investment)} sparkData={sparkTrends} color={C.navy} />
+            value={`₹${totals.totalInv.toLocaleString()} Cr`} sub="Cumulative (Approved)"
+            trend={totals.invTrend} sparkData={monthly.map(m => m.investment)} color={C.navy} />
           <KPICard icon={Users}       title="Workforce"          delay={0.10}
-            value={latest.employment.toLocaleString()} sub="Direct + Contractual"
-            trend={pct(latest.employment, prev.employment)} sparkData={MONTHLY.map(m=>m.employment/100)} color={C.emerald} />
+            value={totals.totalJobs.toLocaleString()} sub="Direct + Contractual"
+            trend={totals.jobTrend} sparkData={monthly.map(m => m.employment)} color={C.emerald} />
           <KPICard icon={Droplets}    title="Water Consumption"  delay={0.15}
-            value={`${totalWater.toLocaleString()} KLD`} sub="State-wide daily usage"
-            trend={pct(latest.water, prev.water)} sparkData={MONTHLY.map(m=>m.water/100)} color={C.amber} />
+            value={`${totals.totalWater.toLocaleString()} KLD`} sub="Daily usage aggregate"
+            trend={totals.waterTrend} sparkData={monthly.map(m => m.water)} color={C.amber} />
           <KPICard icon={Leaf}        title="CSR Spend"          delay={0.20}
-            value={`₹${totalCSR} L`} sub="FY 2024-25 total"
-            trend={pct(latest.csr, prev.csr)} sparkData={MONTHLY.map(m=>m.csr)} color="#8B5CF6" />
+            value={`₹${totals.totalCSR.toFixed(1)} L`} sub="Cumulative CSR Spend"
+            trend={totals.csrTrend} sparkData={monthly.map(m => m.csr)} color="#8B5CF6" />
         </div>
 
         {/* ── II. Intelligence Grid ─────────────────────────────────────── */}
@@ -264,11 +353,11 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="font-bold text-slate-800 text-sm">Investment vs Employment Trend</h2>
-                <p className="text-xs text-slate-400">12-month performance · Bars = Investment · Line = Jobs</p>
+                <p className="text-xs text-slate-400">Monthly performance · Bars = Investment · Line = Jobs</p>
               </div>
             </div>
             <ResponsiveContainer width="100%" height={280}>
-              <ComposedChart data={MONTHLY} margin={{ top: 4, right: 20, bottom: 0, left: 0 }}>
+              <ComposedChart data={monthly} margin={{ top: 4, right: 20, bottom: 0, left: 0 }}>
                 <CartesianGrid stroke="#F1F5F9" strokeDasharray="3 3" />
                 <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
                 <YAxis yAxisId="inv" orientation="left"
@@ -288,13 +377,13 @@ export default function AdminDashboard() {
           {/* Donut Chart — col-span-4 */}
           <motion.div {...fadeUp(0.25)} className="lg:col-span-4 bg-white rounded-xl border border-slate-200 shadow-sm p-5">
             <h2 className="font-bold text-slate-800 text-sm mb-1">Sector Distribution</h2>
-            <p className="text-xs text-slate-400 mb-4">Click a slice to drill down</p>
+            <p className="text-xs text-slate-400 mb-4">Investment share by industry sector</p>
             <ResponsiveContainer width="100%" height={180}>
               <PieChart>
-                <Pie data={SECTORS} cx="50%" cy="50%" innerRadius={50} outerRadius={80}
+                <Pie data={sectors} cx="50%" cy="50%" innerRadius={50} outerRadius={80}
                   dataKey="value" paddingAngle={3}
-                  onClick={(d) => { setActiveSlice(d.name); console.log('Sector:', d.name); }}>
-                  {SECTORS.map((s) => (
+                  onClick={(d) => { setActiveSlice(d.name === activeSlice ? null : d.name); }}>
+                  {sectors.map((s) => (
                     <Cell key={s.name} fill={s.color}
                       opacity={activeSlice && activeSlice !== s.name ? 0.4 : 1}
                       stroke={activeSlice === s.name ? '#fff' : 'none'} strokeWidth={2} />
@@ -303,17 +392,20 @@ export default function AdminDashboard() {
                 <Tooltip formatter={(v: number) => `${v}%`} />
               </PieChart>
             </ResponsiveContainer>
-            <div className="space-y-2 mt-2">
-              {SECTORS.map(s => (
-                <div key={s.name} className="flex items-center justify-between text-xs cursor-pointer"
+            <div className="space-y-2 mt-2 max-h-[140px] overflow-y-auto pr-1">
+              {sectors.map(s => (
+                <div key={s.name} className="flex items-center justify-between text-xs cursor-pointer group"
                   onClick={() => { setActiveSlice(s.name === activeSlice ? null : s.name); }}>
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full flex-none" style={{ background: s.color }} />
-                    <span className={`font-medium ${activeSlice === s.name ? 'text-slate-800' : 'text-slate-500'}`}>{s.name}</span>
+                    <span className={`font-medium transition-colors ${activeSlice === s.name ? 'text-[#003366] font-bold' : 'text-slate-500 group-hover:text-slate-800'}`}>{s.name}</span>
                   </div>
                   <span className="font-bold text-slate-700">{s.value}%</span>
                 </div>
               ))}
+              {sectors.length === 0 && (
+                <p className="text-center text-slate-400 text-xs py-10">No sector data available</p>
+              )}
             </div>
           </motion.div>
         </div>
@@ -323,54 +415,62 @@ export default function AdminDashboard() {
 
           {/* Gauges */}
           <motion.div {...fadeUp(0.3)} className="lg:col-span-4 bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-            <h2 className="font-bold text-slate-800 text-sm mb-4">Resource Stress Gauges</h2>
+            <h2 className="font-bold text-slate-800 text-sm mb-4">Resource Capacity Utilization</h2>
             <div className="flex justify-around">
-              <SemiGauge label="Water Usage" value={totalWater} capacity={10000} unit="KLD" />
-              <SemiGauge label="Power Usage" value={284000} capacity={320000} unit="kWh" />
+              <SemiGauge label="Water Usage" value={totals.totalWater} capacity={20000} unit="KLD" />
+              <SemiGauge label="Power Load" value={monthly.reduce((s,m)=>s+m.water,0)/10} capacity={10000} unit="MWh" />
             </div>
           </motion.div>
 
           {/* Water Alert Table */}
           <motion.div {...fadeUp(0.35)} className="lg:col-span-8 bg-white rounded-xl border border-slate-200 shadow-sm p-5">
             <div className="flex items-center gap-2 mb-4">
-              <AlertTriangle size={15} className="text-red-500" />
-              <h2 className="font-bold text-slate-800 text-sm">Water Alert Parks (&gt;1,000 KLD)</h2>
-              <span className="ml-auto bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">
-                {WATER_ALERTS.length} parks
+              <AlertTriangle size={15} className="text-[#FF9900]" />
+              <h2 className="font-bold text-slate-800 text-sm">Industrial Parks Alert Status</h2>
+              <span className={`ml-auto text-xs font-bold px-2 py-0.5 rounded-full ${waterAlerts.length > 0 ? 'bg-amber-100 text-[#FF9900]' : 'bg-emerald-100 text-emerald-700'}`}>
+                {waterAlerts.length} alerts active
               </span>
             </div>
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-slate-100">
-                  {['Park','District','Water (KLD)','Jobs','Investment (Cr)','Status'].map(h => (
-                    <th key={h} className="text-left py-2 text-slate-400 font-semibold uppercase tracking-wide">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {WATER_ALERTS.map(p => {
-                  const crit = p.water_kld > 1800;
-                  return (
-                    <tr key={p.id} className={`${crit ? 'bg-red-50' : 'bg-amber-50/40'}`}>
-                      <td className="py-2.5 font-semibold text-slate-800 pr-4">{p.name}</td>
-                      <td className="py-2.5 text-slate-500">—</td>
-                      <td className="py-2.5">
-                        <span className={`font-bold ${crit ? 'text-red-600' : 'text-amber-600'}`}>
-                          {p.water_kld.toLocaleString()}
-                        </span>
-                      </td>
-                      <td className="py-2.5 text-slate-600">{p.total_jobs.toLocaleString()}</td>
-                      <td className="py-2.5 text-slate-600">₹{p.investment_cr.toLocaleString()}</td>
-                      <td className="py-2.5">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${crit ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
-                          {crit ? '🔴 Critical' : '🟡 High'}
-                        </span>
-                      </td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-slate-100">
+                    {['Park','District','Water (KLD)','Jobs','Investment (Cr)','Status'].map(h => (
+                      <th key={h} className="text-left py-2 text-slate-400 font-semibold uppercase tracking-wide">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {parks.map(p => {
+                    const crit = p.has_water_alert || p.total_water_kld > 2000;
+                    const high = p.total_water_kld > 1000;
+                    return (
+                      <tr key={p.park_id} className={`${crit ? 'bg-red-50/50' : high ? 'bg-amber-50/40' : ''} hover:bg-slate-50 transition-colors`}>
+                        <td className="py-2.5 font-semibold text-slate-800 pr-4">{p.park_name}</td>
+                        <td className="py-2.5 text-slate-500">{p.district}</td>
+                        <td className="py-2.5">
+                          <span className={`font-bold ${crit ? 'text-red-600' : high ? 'text-amber-600' : 'text-slate-700'}`}>
+                            {p.total_water_kld.toLocaleString()}
+                          </span>
+                        </td>
+                        <td className="py-2.5 text-slate-600">{p.total_jobs.toLocaleString()}</td>
+                        <td className="py-2.5 text-slate-600">₹{p.total_investment_cr.toLocaleString()}</td>
+                        <td className="py-2.5">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${crit ? 'bg-red-100 text-red-700' : high ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                            {crit ? '🔴 Critical' : high ? '🟡 Alert' : '🟢 Normal'}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {parks.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="py-10 text-center text-slate-400">No park data available</td>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </motion.div>
         </div>
 
@@ -379,61 +479,62 @@ export default function AdminDashboard() {
 
           {/* Analytics cards */}
           <motion.div {...fadeUp(0.4)} className="lg:col-span-4 bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-            <h2 className="font-bold text-slate-800 text-sm mb-4">Advanced Analytics</h2>
+            <h2 className="font-bold text-slate-800 text-sm mb-4">Efficiency Metrics</h2>
             <div className="space-y-4">
               {/* Water Efficiency Index */}
               <div className="bg-slate-50 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs text-slate-500 font-semibold">Water Efficiency Index</span>
-                  <span className="text-sm font-extrabold text-navy-700" style={{ color: C.navy }}>{waterEfficiency}</span>
+                  <span className="text-sm font-extrabold" style={{ color: C.navy }}>
+                    {totals.totalWater > 0 ? (totals.totalInv / totals.totalWater).toFixed(3) : '0.000'}
+                  </span>
                 </div>
-                <p className="text-xs text-slate-400">Turnover ÷ Water Consumed · Higher = Better</p>
+                <p className="text-xs text-slate-400">Investment (Cr) ÷ Water (KLD) · Higher = More Efficient</p>
                 <div className="mt-2 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                  <div className="h-full bg-[#003366] rounded-full" style={{ width: `${Math.min(parseFloat(waterEfficiency)/2, 100)}%` }} />
+                  <div className="h-full bg-[#003366] rounded-full" style={{ width: `${Math.min((totals.totalInv / totals.totalWater || 0) * 100, 100)}%` }} />
                 </div>
               </div>
 
-              {/* Gender Parity Score */}
+              {/* Jobs Intensity */}
               <div className="bg-slate-50 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-slate-500 font-semibold">Gender Parity Score</span>
-                  <span className="text-sm font-extrabold" style={{ color: C.emerald }}>{genderParity}%</span>
+                  <span className="text-xs text-slate-500 font-semibold">Jobs per Crore Investment</span>
+                  <span className="text-sm font-extrabold" style={{ color: C.emerald }}>
+                    {totals.totalInv > 0 ? (totals.totalJobs / totals.totalInv).toFixed(1) : '0.0'}
+                  </span>
                 </div>
-                <div className="flex text-xs text-slate-400 gap-4 mb-2">
-                  <span>♂ {EMP.male.toLocaleString()}</span>
-                  <span>♀ {EMP.female.toLocaleString()}</span>
-                  <span>C {EMP.contractual.toLocaleString()}</span>
+                <p className="text-xs text-slate-400">Employment generation efficiency</p>
+                <div className="mt-2 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full" style={{ width: `${Math.min((totals.totalJobs / totals.totalInv || 0) * 5, 100)}%`, background: C.emerald }} />
                 </div>
-                <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                  <div className="h-full rounded-full" style={{ width: `${genderParity}%`, background: C.emerald }} />
-                </div>
-                <p className="text-xs text-slate-400 mt-1">Standard target: 30%</p>
               </div>
 
               {/* Capital Intensity */}
               <div className="bg-slate-50 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-slate-500 font-semibold">Capital Intensity</span>
-                  <span className="text-sm font-extrabold" style={{ color: C.amber }}>₹{capitalIntensity}L</span>
+                  <span className="text-xs text-slate-500 font-semibold">Investment per Park</span>
+                  <span className="text-sm font-extrabold" style={{ color: C.amber }}>₹{parks.length > 0 ? (totals.totalInv / parks.length).toFixed(1) : '0'} Cr</span>
                 </div>
-                <p className="text-xs text-slate-400">Investment per Employee · FY 2024-25</p>
+                <p className="text-xs text-slate-400">Avg. investment concentration across {parks.length} parks</p>
               </div>
             </div>
           </motion.div>
 
           {/* Map — col-span-8 */}
-          <motion.div {...fadeUp(0.45)} className="lg:col-span-8 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <motion.div {...fadeUp(0.45)} className="lg:col-span-8 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px] flex flex-col">
             <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
               <div>
-                <h2 className="font-bold text-slate-800 text-sm">Park Locations — Tamil Nadu</h2>
-                <p className="text-xs text-slate-400">Orange = Water &gt; 1,000 KLD</p>
+                <h2 className="font-bold text-slate-800 text-sm">Geospatial Industrial Map — Tamil Nadu</h2>
+                <p className="text-xs text-slate-400">Live park status · Orange = Alert (&gt; 1,000 KLD)</p>
               </div>
               <div className="flex items-center gap-4 text-xs text-slate-400">
                 <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#003366] inline-block"/>Normal</span>
                 <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#FF9900] inline-block"/>Alert</span>
               </div>
             </div>
-            <ParkMap parks={PARKS_MAP} />
+            <div className="flex-1">
+              <ParkMap parks={parkMapData} />
+            </div>
           </motion.div>
         </div>
       </div>

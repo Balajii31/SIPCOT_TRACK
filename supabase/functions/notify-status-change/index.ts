@@ -207,10 +207,14 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ skipped: true, reason: 'status unchanged' }), { status: 200 });
     }
 
-    // ── Fetch industry info ───────────────────────────────────────────────────
+    // ── Fetch industry info + linked user profile email ───────────────────────
     const { data: industry, error: indErr } = await supabase
       .from('industries')
-      .select('name, email, contact_email')
+      .select(`
+        name,
+        contact_email,
+        user:profiles (email)
+      `)
       .eq('id', industry_id)
       .single();
 
@@ -219,7 +223,9 @@ Deno.serve(async (req: Request) => {
       return new Response('Industry not found', { status: 404 });
     }
 
-    const toEmail = industry.contact_email || industry.email;
+    // Use linked profile email as primary, fallback to contact_email
+    const userEmail = (industry as any).user?.email;
+    const toEmail   = userEmail || industry.contact_email;
     if (!toEmail) return new Response('No email address for industry', { status: 400 });
 
     const name = industry.name ?? 'Valued Allottee';

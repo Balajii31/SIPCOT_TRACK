@@ -1,10 +1,5 @@
-import AuthForm from '@/components/AuthForm';
+import RegistrationForm from '@/components/RegistrationForm';
 
-export default async function SignUpPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ role?: string }>;
-}) {
-  const { role } = await searchParams;
-  return <AuthForm defaultMode="register" forcedRole={role as any} />;
+export default async function SignUpPage() {
+  return <RegistrationForm />;
 }

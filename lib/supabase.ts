@@ -27,6 +27,26 @@ export const supabase = new Proxy({} as SupabaseClient, {
   },
 });
 
+/**
+ * Server-only admin client using service_role key.
+ * Use ONLY in API routes or Server Actions.
+ */
+export function getSupabaseAdmin(): SupabaseClient {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceKey) {
+    throw new Error('Missing Supabase Service Role configuration.');
+  }
+
+  return createClient(supabaseUrl, serviceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  });
+}
+
 // ── Types matching the database schema ────────────────────────────────────────
 
 export type UserRole = 'industry' | 'official' | 'admin';

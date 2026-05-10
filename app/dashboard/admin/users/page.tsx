@@ -91,6 +91,37 @@ export default function UsersPage() {
     }
   };
 
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
+    
+    setActionLoading(userId);
+    try {
+      const response = await fetch('/api/admin/users/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+
+      if (response.ok) {
+        await loadUsers();
+        // ── Audit Log ─────────────────────────────────────────────────────────
+        await recordAuditLog({
+          action: 'user.deleted',
+          entity_type: 'user',
+          entity_id: userId,
+        });
+      } else {
+        const error = await response.json();
+        alert('Failed to delete user: ' + error.error);
+      }
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      alert('An error occurred while deleting the user.');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
@@ -164,25 +195,35 @@ export default function UsersPage() {
                   </p>
                 </div>
 
-                {user.status === 'pending' && (
                   <div className="flex gap-2 ml-4">
+                    {user.status === 'pending' && (
+                      <>
+                        <Button
+                          size="sm"
+                          onClick={() => handleApproveUser(user.id)}
+                          disabled={actionLoading === user.id}
+                        >
+                          Approve
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleRejectUser(user.id)}
+                          disabled={actionLoading === user.id}
+                        >
+                          Reject
+                        </Button>
+                      </>
+                    )}
                     <Button
                       size="sm"
-                      onClick={() => handleApproveUser(user.id)}
+                      variant="destructive"
+                      onClick={() => handleDeleteUser(user.id)}
                       disabled={actionLoading === user.id}
                     >
-                      Approve
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleRejectUser(user.id)}
-                      disabled={actionLoading === user.id}
-                    >
-                      Reject
+                      Delete
                     </Button>
                   </div>
-                )}
               </div>
             </Card>
           ))}
