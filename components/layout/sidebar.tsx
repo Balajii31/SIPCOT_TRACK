@@ -23,6 +23,7 @@ export function Sidebar({ user }: SidebarProps) {
         { href: '/dashboard/industry', label: 'Dashboard', roles: ['industry'] },
         { href: '/dashboard/industry/submit-report', label: 'Submit Report', roles: ['industry'] },
         { href: '/dashboard/industry/history', label: 'Report History', roles: ['industry'] },
+        { href: '/dashboard/allottee/forms', label: 'Custom Forms', roles: ['industry'] },
         ...baseItems,
       ];
     } else if (user.role === 'official') {
@@ -37,6 +38,7 @@ export function Sidebar({ user }: SidebarProps) {
       return [
         { href: '/dashboard/admin', label: 'Dashboard', roles: ['admin'] },
         { href: '/dashboard/admin/users', label: 'User Management', roles: ['admin'] },
+        { href: '/dashboard/admin/forms', label: 'Form Builder', roles: ['admin'] },
         { href: '/dashboard/admin/settings', label: 'Settings', roles: ['admin'] },
         { href: '/dashboard/admin/audit', label: 'Audit Logs', roles: ['admin'] },
         ...baseItems,

@@ -37,9 +37,9 @@ const DEPARTMENTS = [
 ].sort();
 
 const REDIRECT: Record<Role, string> = {
-  industry: '/allottee/update',
-  official: '/admin/verify',
-  admin:    '/admin/dashboard',
+  industry: '/dashboard',
+  official: '/dashboard',
+  admin:    '/dashboard',
 };
 
 export default function AuthForm({ defaultMode = 'login', forcedRole }: { defaultMode?: Mode; forcedRole?: Role }) {

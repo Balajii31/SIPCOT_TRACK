@@ -29,6 +29,7 @@ export default function IndustryDashboard() {
   });
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
+  const [pendingFormsCount, setPendingFormsCount] = useState(0);
 
   useEffect(() => {
     async function loadData() {
@@ -66,6 +67,55 @@ export default function IndustryDashboard() {
             last_submitted: lastSubmitted,
             current_status: verified > 0 ? 'Verified' : 'Submitted',
           });
+        }
+
+        // Fetch pending custom forms count
+        // 1. Get industry ID
+        let industryId = '';
+        const { data: industry } = await supabase
+          .from('industries')
+          .select('id')
+          .eq('user_id', authUser.id)
+          .maybeSingle();
+
+        if (industry) {
+          industryId = industry.id;
+        } else {
+          const { data: rawProfile } = await supabase
+            .from('profiles')
+            .select('allottee_code')
+            .eq('id', authUser.id)
+            .single();
+
+          if (rawProfile?.allottee_code) {
+            const { data: linkedInd } = await supabase
+              .from('industries')
+              .select('id')
+              .eq('allottee_code', rawProfile.allottee_code)
+              .maybeSingle();
+            if (linkedInd) {
+              industryId = linkedInd.id;
+            }
+          }
+        }
+
+        if (industryId) {
+          // 2. Fetch all active custom forms
+          const { data: activeForms } = await supabase
+            .from('custom_forms')
+            .select('id')
+            .eq('is_active', true);
+
+          // 3. Fetch submissions for this industry
+          const { data: submissions } = await supabase
+            .from('custom_form_submissions')
+            .select('form_id')
+            .eq('industry_id', industryId);
+
+          const submittedIds = new Set(submissions?.map(s => s.form_id) || []);
+          const activeIds = activeForms?.map(f => f.id) || [];
+          const pendingCount = activeIds.filter(id => !submittedIds.has(id)).length;
+          setPendingFormsCount(pendingCount);
         }
       } catch (error) {
         console.error('Error loading data:', error);
@@ -111,9 +161,11 @@ export default function IndustryDashboard() {
         </Card>
 
         <Card className="p-6">
-          <div className="text-sm text-muted-foreground mb-2">Account Status</div>
-          <div className="text-lg font-bold text-green-600 dark:text-green-400">Active</div>
-          <p className="text-xs text-muted-foreground mt-2">Ready to submit</p>
+          <div className="text-sm text-muted-foreground mb-2">Pending Custom Forms</div>
+          <div className={`text-3xl font-bold ${pendingFormsCount > 0 ? 'text-amber-600 animate-pulse' : 'text-foreground'}`}>
+            {pendingFormsCount}
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">Required surveys/audits</p>
         </Card>
 
         <Card className="p-6">
@@ -133,6 +185,11 @@ export default function IndustryDashboard() {
           <Link href="/dashboard/industry/submit-report">
             <Button>Submit Monthly Report</Button>
           </Link>
+          <Link href="/dashboard/allottee/forms">
+            <Button variant="outline" className={pendingFormsCount > 0 ? 'border-amber-500 text-amber-600 hover:bg-amber-50' : 'border-[#003366] text-[#003366] hover:bg-[#003366]/5'}>
+              Custom Forms {pendingFormsCount > 0 && `(${pendingFormsCount})`}
+            </Button>
+          </Link>
           <Link href="/dashboard/industry/history">
             <Button variant="outline">View History</Button>
           </Link>
@@ -141,6 +198,7 @@ export default function IndustryDashboard() {
           </Link>
         </div>
       </Card>
+      </div>
     </div>
   );
 }

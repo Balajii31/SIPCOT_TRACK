@@ -24,32 +24,71 @@ export default function DashboardLayout({
   useEffect(() => {
     async function loadUser() {
       try {
-        const profile: User = {
-          id: 'mock-user-id',
-          email: 'admin@example.com',
-          full_name: 'Mock Admin',
-          role: 'admin',
-          company_name: 'Mock Company',
-          company_sector: 'Technology',
-          status: 'approved',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-
-        setUser(profile);
+        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
         
-        // Route to appropriate dashboard based on role
-        if (window.location.pathname === '/dashboard') {
-          if (profile.role === 'industry') {
-            router.push('/dashboard/industry');
-          } else if (profile.role === 'official') {
-            router.push('/dashboard/official');
-          } else if (profile.role === 'admin') {
-            router.push('/dashboard/admin');
+        if (authUser && !authError) {
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', authUser.id)
+            .single();
+
+          if (profileData && !profileError) {
+            const profile: any = {
+              id: profileData.id,
+              email: profileData.email,
+              full_name: profileData.full_name || 'Allottee User',
+              role: profileData.role,
+              company_name: profileData.industry_name || 'N/A',
+              company_sector: profileData.district || 'N/A',
+              status: profileData.status,
+              created_at: profileData.created_at,
+              updated_at: profileData.updated_at,
+            };
+
+            setUser(profile);
+
+            // Client-side route-role authorization checks
+            const currentPath = window.location.pathname;
+            if (profile.status === 'pending') {
+              if (currentPath !== '/unauthorized' || !window.location.search.includes('reason=pending')) {
+                router.push('/unauthorized?reason=pending');
+                return;
+              }
+            } else {
+              if (currentPath.startsWith('/dashboard/admin') && profile.role !== 'admin') {
+                router.push('/unauthorized?reason=role');
+                return;
+              }
+              if (currentPath.startsWith('/dashboard/official') && profile.role !== 'official') {
+                router.push('/unauthorized?reason=role');
+                return;
+              }
+              if (currentPath.startsWith('/dashboard/industry') && profile.role !== 'industry') {
+                router.push('/unauthorized?reason=role');
+                return;
+              }
+            }
+
+            // Route to appropriate dashboard based on role
+            if (currentPath === '/dashboard') {
+              if (profile.role === 'industry') {
+                router.push('/dashboard/industry');
+              } else if (profile.role === 'official') {
+                router.push('/dashboard/official');
+              } else if (profile.role === 'admin') {
+                router.push('/dashboard/admin');
+              }
+            }
+            return;
           }
         }
+
+        // If not authenticated, redirect to login
+        router.push('/login');
       } catch (error) {
         console.error('Error loading user:', error);
+        router.push('/login');
       } finally {
         setLoading(false);
       }

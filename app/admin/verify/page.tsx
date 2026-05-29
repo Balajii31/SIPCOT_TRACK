@@ -9,6 +9,7 @@ import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { BrandHeader } from '@/components/BrandHeader';
 import { UserNav } from '@/components/UserNav';
+import { FileText } from 'lucide-react';
 import { supabase, recordAuditLog, type VerificationItem, type ReportStatus } from '@/lib/supabase';
 
 type FilterType = 'all' | ReportStatus;
@@ -110,6 +111,9 @@ export default function AdminVerifyPage() {
           <>
             <Link href="/admin/dashboard" className="text-white/80 hover:text-white text-sm transition-colors">
               ← Map Dashboard
+            </Link>
+            <Link href="/dashboard/admin/forms" className="text-white/80 hover:text-white text-sm transition-colors flex items-center gap-1">
+              <FileText size={14} /> Form Builder
             </Link>
             <Link href="/" className="text-white/60 hover:text-white text-sm transition-colors">
               Home

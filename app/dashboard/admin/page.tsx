@@ -109,6 +109,9 @@ export default function AdminDashboard() {
             <Link href="/dashboard/admin/users">
               <Button>Manage Users</Button>
             </Link>
+            <Link href="/dashboard/admin/forms">
+              <Button variant="outline">Form Builder</Button>
+            </Link>
             <Link href="/dashboard/admin/settings">
               <Button variant="outline">System Settings</Button>
             </Link>

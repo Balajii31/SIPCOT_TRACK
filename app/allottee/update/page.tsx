@@ -502,13 +502,20 @@ export default function AllotteeUpdatePage() {
         subtitle="Industry Data Submission"
         rightContent={
           <div className="flex items-center gap-4">
+            <Link href="/dashboard" className="text-white/80 hover:text-[#FF9900] text-sm font-semibold transition-colors">
+              Dashboard
+            </Link>
+            <Link href="/dashboard/allottee/forms" className="text-white/80 hover:text-[#FF9900] text-sm font-semibold transition-colors">
+              Custom Forms
+            </Link>
+            <div className="w-px h-6 bg-white/10 mx-1" />
             <Link href="/" className="text-white/60 hover:text-white text-sm transition-colors flex items-center gap-1">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
               Back
             </Link>
-            <div className="w-px h-6 bg-white/10 mx-2" />
+            <div className="w-px h-6 bg-white/10 mx-1" />
             <UserNav />
           </div>
         }

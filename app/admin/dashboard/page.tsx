@@ -8,7 +8,7 @@ import {
 } from 'recharts';
 import {
   TrendingUp, TrendingDown, Users, Droplets, Leaf, Building2,
-  AlertTriangle, Download, Loader2,
+  AlertTriangle, Download, Loader2, FileText,
 } from 'lucide-react';
 import { BrandHeader } from '@/components/BrandHeader';
 import { UserNav } from '@/components/UserNav';
@@ -305,6 +305,11 @@ export default function AdminDashboard() {
               {parks.some(p => p.pending_reports > 0) && (
                 <span className="w-2 h-2 rounded-full bg-[#FF9900] animate-pulse" />
               )}
+            </a>
+            <a href="/dashboard/admin/forms"
+              className="text-white/80 hover:text-[#FF9900] text-sm font-medium transition-colors flex items-center gap-1.5">
+              <FileText size={14} />
+              Form Builder
             </a>
             <a href="/dashboard/admin/users"
               className="text-white/80 hover:text-[#FF9900] text-sm font-medium transition-colors flex items-center gap-1.5">

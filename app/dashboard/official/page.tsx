@@ -217,6 +217,7 @@ export default function OfficialDashboard() {
           </Link>
         </div>
       </Card>
+      </div>
     </div>
   );
 }
