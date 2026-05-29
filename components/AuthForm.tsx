@@ -39,7 +39,7 @@ const DEPARTMENTS = [
 const REDIRECT: Record<Role, string> = {
   industry: '/dashboard',
   official: '/dashboard',
-  admin:    '/dashboard',
+  admin:    '/admin/dashboard',
 };
 
 export default function AuthForm({ defaultMode = 'login', forcedRole }: { defaultMode?: Mode; forcedRole?: Role }) {

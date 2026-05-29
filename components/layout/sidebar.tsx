@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import type { User } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
@@ -36,7 +37,8 @@ export function Sidebar({ user }: SidebarProps) {
       ];
     } else if (user.role === 'admin') {
       return [
-        { href: '/dashboard/admin', label: 'Dashboard', roles: ['admin'] },
+        { href: '/admin/dashboard', label: 'Map Dashboard', roles: ['admin'] },
+        { href: '/dashboard/admin', label: 'System Overview', roles: ['admin'] },
         { href: '/dashboard/admin/users', label: 'User Management', roles: ['admin'] },
         { href: '/dashboard/admin/forms', label: 'Form Builder', roles: ['admin'] },
         { href: '/dashboard/admin/settings', label: 'Settings', roles: ['admin'] },
@@ -53,11 +55,25 @@ export function Sidebar({ user }: SidebarProps) {
 
   return (
     <aside className="w-64 bg-card border-r border-border flex flex-col">
-      <div className="p-6 border-b border-border">
-        <h1 className="text-2xl font-bold text-foreground">SIPCOT</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {user.role.charAt(0).toUpperCase() + user.role.slice(1)} Portal
-        </p>
+      <div className="py-[15px] px-6 border-b border-white/10 bg-[#003366] text-white flex items-center gap-3">
+        <div className="w-9 h-9 rounded-full bg-white p-0.5 flex-none shadow-md">
+          <Image
+            src="/tn_emblem.png"
+            alt="Government of Tamil Nadu Emblem"
+            width={36}
+            height={36}
+            className="rounded-full object-contain"
+          />
+        </div>
+        <div>
+          <p className="text-white/60 text-[8px] font-semibold tracking-widest uppercase leading-tight">
+            Government of Tamil Nadu
+          </p>
+          <p className="font-extrabold text-sm tracking-wide leading-tight">SIPCOT TRACK</p>
+          <p className="text-[9px] text-[#FF9900] font-bold leading-none mt-0.5 uppercase tracking-tighter">
+            {user.role} Portal
+          </p>
+        </div>
       </div>
 
       <nav className="flex-1 p-4 space-y-2 overflow-y-auto">

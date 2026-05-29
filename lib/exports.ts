@@ -177,7 +177,19 @@ export async function generateComprehensiveReport(filters?: {
       .order('month', { ascending: false });
 
     if (!reports || reports.length === 0) {
-      return { summary: {}, data: [] };
+      return {
+        summary: {
+          total_companies: 0,
+          total_reports: 0,
+          total_investment: 0,
+          total_employment: 0,
+          total_water: 0,
+          total_power: 0,
+          total_turnover: 0,
+          total_csr: 0,
+        },
+        data: []
+      };
     }
 
     // Calculate summary stats

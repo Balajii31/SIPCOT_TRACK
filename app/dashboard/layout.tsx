@@ -77,7 +77,7 @@ export default function DashboardLayout({
               } else if (profile.role === 'official') {
                 router.push('/dashboard/official');
               } else if (profile.role === 'admin') {
-                router.push('/dashboard/admin');
+                router.push('/admin/dashboard');
               }
             }
             return;

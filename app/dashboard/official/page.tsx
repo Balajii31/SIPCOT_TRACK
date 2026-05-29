@@ -111,12 +111,7 @@ export default function OfficialDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <BrandHeader 
-        subtitle="Industrial Monitoring" 
-        rightContent={<UserNav />}
-      />
-      <div className="p-8 max-w-7xl mx-auto">
+    <div className="p-8 max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">Official Dashboard</h1>
           <p className="text-muted-foreground">Monitor industrial performance and submissions</p>
@@ -217,7 +212,6 @@ export default function OfficialDashboard() {
           </Link>
         </div>
       </Card>
-      </div>
     </div>
   );
 }
