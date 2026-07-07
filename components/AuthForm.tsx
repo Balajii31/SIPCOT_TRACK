@@ -134,37 +134,6 @@ export default function AuthForm({ defaultMode = 'login', forcedRole }: { defaul
 
     if (authErr) { setError(authErr.message); setLoading(false); return; }
 
-    // Also upsert extra fields into profiles (trigger covers base fields)
-    if (data.user) {
-      await supabase.from('profiles').upsert({
-        id:            data.user.id,
-        email:         form.email,
-        full_name:     form.fullName,
-        role,
-        status:        role === 'industry' ? 'active' : 'pending',
-        industry_name: form.industryName || null,
-        allottee_code: form.allotteeCode || null,
-        district:      form.district     || null,
-        department:    form.department   || null,
-      });
-
-      // Link to industry if allottee code matches
-      if (role === 'industry' && form.allotteeCode) {
-        const { data: ind } = await supabase
-          .from('industries')
-          .select('id')
-          .eq('allottee_code', form.allotteeCode)
-          .maybeSingle();
-        
-        if (ind) {
-          await supabase
-            .from('industries')
-            .update({ user_id: data.user.id })
-            .eq('id', ind.id);
-        }
-      }
-    }
-
     setLoading(false);
     if (role === 'industry') {
       setSuccess('Account created! Redirecting...');

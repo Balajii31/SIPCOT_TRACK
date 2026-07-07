@@ -64,7 +64,10 @@ export default function DashboardLayout({
                 router.push('/unauthorized?reason=role');
                 return;
               }
-              if (currentPath.startsWith('/dashboard/industry') && profile.role !== 'industry') {
+              if (
+                (currentPath.startsWith('/dashboard/industry') || currentPath.startsWith('/dashboard/allottee')) &&
+                profile.role !== 'industry'
+              ) {
                 router.push('/unauthorized?reason=role');
                 return;
               }

@@ -81,31 +81,27 @@ export async function proxy(request: NextRequest) {
   }
 
   // 7. Enforce Role-Based Access Gates
-  if (pathname.startsWith('/dashboard/admin')) {
+  
+  // Admin Routes
+  if (pathname.startsWith('/dashboard/admin') || pathname.startsWith('/admin')) {
     if (profile.role !== 'admin') {
       return NextResponse.redirect(new URL('/unauthorized?reason=role', request.url));
     }
   }
 
-  if (pathname.startsWith('/admin')) {
-    if (pathname.startsWith('/admin/verify')) {
-      if (profile.role !== 'admin' && profile.role !== 'official') {
-        return NextResponse.redirect(new URL('/unauthorized?reason=role', request.url));
-      }
-    } else {
-      if (profile.role !== 'admin') {
-        return NextResponse.redirect(new URL('/unauthorized?reason=role', request.url));
-      }
-    }
-  }
-
+  // Official Routes
   if (pathname.startsWith('/dashboard/official')) {
     if (profile.role !== 'official') {
       return NextResponse.redirect(new URL('/unauthorized?reason=role', request.url));
     }
   }
 
-  if (pathname.startsWith('/dashboard/industry') || pathname.startsWith('/allottee')) {
+  // Industry / Allottee Routes
+  if (
+    pathname.startsWith('/dashboard/industry') ||
+    pathname.startsWith('/dashboard/allottee') ||
+    pathname.startsWith('/allottee')
+  ) {
     if (profile.role !== 'industry') {
       return NextResponse.redirect(new URL('/unauthorized?reason=role', request.url));
     }

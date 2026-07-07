@@ -33,6 +33,7 @@ export function Sidebar({ user }: SidebarProps) {
         { href: '/dashboard/official/monitor', label: 'Monitor Industries', roles: ['official'] },
         { href: '/dashboard/official/reports', label: 'Reports', roles: ['official'] },
         { href: '/dashboard/official/alerts', label: 'Alerts', roles: ['official'] },
+        { href: '/dashboard/official/export', label: 'Export Data', roles: ['official'] },
         ...baseItems,
       ];
     } else if (user.role === 'admin') {
