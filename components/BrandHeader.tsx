@@ -21,11 +21,15 @@ export function BrandHeader({ subtitle, rightContent }: BrandHeaderProps) {
           />
         </div>
         <div>
-          <p className="text-white/60 text-[10px] font-semibold tracking-widest uppercase leading-tight">
-            Government of Tamil Nadu
-          </p>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 flex-wrap leading-tight">
+            <p className="text-white/60 text-[10px] font-semibold tracking-widest uppercase">
+              Government of Tamil Nadu
+            </p>
+            <span className="text-[9px] text-white/40">தமிழ்நாடு அரசு</span>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="font-extrabold text-base tracking-wide leading-tight">SIPCOT TRACK</span>
+            <span className="text-[10px] text-white/50 font-normal leading-tight">(சிப்காட் டிராக்)</span>
             {subtitle && (
               <>
                 <span className="text-white/40">|</span>

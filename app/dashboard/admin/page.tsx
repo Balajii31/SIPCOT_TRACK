@@ -34,7 +34,7 @@ export default function AdminDashboard() {
       try {
         // Load user stats
         const { data: allUsers } = await supabase
-          .from('users')
+          .from('profiles')
           .select('id, status');
 
         const { data: reports } = await supabase

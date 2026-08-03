@@ -85,20 +85,20 @@ export async function checkThresholdViolations(reportId: string) {
 
     if (!report) return;
 
-    // Get user details
-    const { data: user } = await supabase
-      .from('users')
+    // Get industry details
+    const { data: industry } = await supabase
+      .from('industries')
       .select('*')
-      .eq('id', report.user_id)
+      .eq('id', report.industry_id)
       .single();
 
-    if (!user) return;
+    if (!industry) return;
 
     // Get thresholds for this sector
     const { data: thresholds } = await supabase
       .from('thresholds')
       .select('*')
-      .eq('sector', user.company_sector || '');
+      .eq('sector', industry.sector || '');
 
     if (!thresholds) return;
 
@@ -127,7 +127,7 @@ export async function checkThresholdViolations(reportId: string) {
     // Send alerts for violations
     for (const violation of violations) {
       await sendNotification(
-        report.user_id,
+        industry.user_id || report.submitted_by,
         'Threshold Alert',
         violation,
         'threshold_alert',

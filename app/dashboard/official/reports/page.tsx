@@ -16,7 +16,7 @@ interface ReportWithCompany {
   year: number;
   status: string;
   submitted_at: string | null;
-  investment_amount: number;
+  investment_cr: number;
   company_name: string;
 }
 
@@ -31,13 +31,13 @@ export default function ReportsPage() {
           .from('monthly_reports')
           .select(`
             *,
-            users!user_id(company_name)
+            industries(name)
           `)
           .order('submitted_at', { ascending: false });
 
         const formatted = reportsData?.map((r: any) => ({
           ...r,
-          company_name: r.users?.company_name || 'Unknown',
+          company_name: r.industries?.name || 'Unknown',
         })) || [];
 
         setReports(formatted);
@@ -101,7 +101,7 @@ export default function ReportsPage() {
                     </div>
                     <div>
                       <p className="text-muted-foreground">Investment</p>
-                      <p className="font-medium text-foreground">₹{report.investment_amount?.toLocaleString('en-IN') || 'N/A'}</p>
+                      <p className="font-medium text-foreground">₹{report.investment_cr != null ? `${report.investment_cr.toLocaleString('en-IN')} Cr` : 'N/A'}</p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">Submitted</p>

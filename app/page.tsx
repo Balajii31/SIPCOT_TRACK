@@ -18,8 +18,13 @@ export default function Home() {
             />
           </div>
           <div>
-            <p className="text-white/70 text-xs font-medium tracking-widest uppercase">Government of Tamil Nadu</p>
-            <h1 className="text-white font-extrabold text-xl leading-tight tracking-wide">SIPCOT TRACK</h1>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <p className="text-white/70 text-[10px] md:text-xs font-medium tracking-widest uppercase">Government of Tamil Nadu</p>
+              <span className="text-[10px] text-white/50 font-normal">தமிழ்நாடு அரசு</span>
+            </div>
+            <h1 className="text-white font-extrabold text-xl leading-tight tracking-wide">
+              SIPCOT TRACK <span className="text-xs text-white/60 font-medium ml-1.5">(சிப்காட் டிராக்)</span>
+            </h1>
           </div>
         </div>
       </header>
@@ -46,11 +51,13 @@ export default function Home() {
           </span>
         </div>
 
-        <h2 className="text-5xl md:text-6xl font-extrabold text-white mb-2 leading-tight tracking-tight">
-          SIPCOT <span style={{ color: '#FF9900' }}>TRACK</span>
+        <h2 className="text-5xl md:text-6xl font-extrabold text-white mb-2 leading-tight tracking-tight flex flex-col items-center">
+          <span>SIPCOT <span style={{ color: '#FF9900' }}>TRACK</span></span>
+          <span className="text-2xl font-bold text-white/80 mt-2 tracking-wide font-sans">சிப்காட் டிராக்</span>
         </h2>
         <p className="text-white/60 text-sm uppercase tracking-widest font-medium mb-4">
           State Industries Promotion Corporation of Tamil Nadu
+          <span className="block text-xs text-white/40 mt-1 font-normal font-sans tracking-normal">(தமிழ்நாடு அரசு தொழில்கள் முன்னேற்ற நிறுவனம்)</span>
         </p>
         <p className="text-white/70 text-lg md:text-xl max-w-2xl mb-16 leading-relaxed">
           A unified, transparent platform for industrial allottees to submit performance data and for SIPCOT officials to monitor, verify, and act.

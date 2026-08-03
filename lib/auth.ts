@@ -30,15 +30,14 @@ export async function signUp(
 
     // Create user profile
     const { error: profileError } = await supabase
-      .from('users')
+      .from('profiles')
       .insert({
         id: authData.user.id,
         email,
         full_name: fullName,
         role,
-        company_sector: companySector,
-        company_name: companyName,
-        status: role === 'industry' ? 'pending' : 'approved',
+        industry_name: companyName,
+        status: role === 'industry' ? 'active' : 'pending',
       });
 
     if (profileError) {
@@ -94,7 +93,7 @@ export async function getCurrentUser() {
     }
 
     const { data: profile, error: profileError } = await supabase
-      .from('users')
+      .from('profiles')
       .select('*')
       .eq('id', user.id)
       .single();

@@ -48,10 +48,10 @@ export default function OfficialDashboard() {
       try {
         // Load stats
         const { data: industryData } = await supabase
-          .from('users')
+          .from('profiles')
           .select('id')
           .eq('role', 'industry')
-          .eq('status', 'approved');
+          .eq('status', 'active');
 
         const { data: reportData } = await supabase
           .from('monthly_reports')
@@ -72,7 +72,7 @@ export default function OfficialDashboard() {
             .slice(-12)
             .map(r => ({
               month: `${r.month}/${r.year}`,
-              investment: r.investment_amount || 0,
+              investment: r.investment_cr || 0,
             }));
 
           setInvestmentTrend(monthlyTrend);

@@ -11,7 +11,8 @@ export async function generateReportPDF(reportId: string) {
       .from('monthly_reports')
       .select(`
         *,
-        users!user_id(full_name, email, company_name)
+        industries(name, contact_email),
+        profiles!submitted_by(full_name)
       `)
       .eq('id', reportId)
       .single();
@@ -35,8 +36,8 @@ export async function generateReportPDF(reportId: string) {
         </head>
         <body>
           <h1>SIPCOT Monthly Report</h1>
-          <p><strong>Company:</strong> ${report.users?.company_name || 'N/A'}</p>
-          <p><strong>Submitted by:</strong> ${report.users?.full_name || 'N/A'}</p>
+          <p><strong>Company:</strong> ${report.industries?.name || 'N/A'}</p>
+          <p><strong>Submitted by:</strong> ${report.profiles?.full_name || 'N/A'}</p>
           <p><strong>Period:</strong> Month ${report.month}, Year ${report.year}</p>
           <p><strong>Status:</strong> ${report.status}</p>
           
@@ -47,28 +48,28 @@ export async function generateReportPDF(reportId: string) {
               <th>Value</th>
             </tr>
             <tr>
-              <td>Investment Amount</td>
-              <td>₹${report.investment_amount?.toLocaleString() || 'N/A'}</td>
+              <td>Investment</td>
+              <td>₹${report.investment_cr != null ? `${report.investment_cr.toLocaleString()} Cr` : 'N/A'}</td>
             </tr>
             <tr>
-              <td>Employment Count</td>
-              <td>${report.employment_count || 'N/A'}</td>
+              <td>Employment</td>
+              <td>${report.emp_total != null ? `${report.emp_total} Persons` : 'N/A'}</td>
             </tr>
             <tr>
-              <td>Water Consumption (ML)</td>
-              <td>${report.water_consumption || 'N/A'}</td>
+              <td>Water Consumption (KLD)</td>
+              <td>${report.water_kld != null ? `${report.water_kld} KLD` : 'N/A'}</td>
             </tr>
             <tr>
-              <td>Power Consumption (MWh)</td>
-              <td>${report.power_consumption || 'N/A'}</td>
+              <td>Power Consumption (kWh)</td>
+              <td>${report.power_kwh != null ? `${report.power_kwh.toLocaleString()} kWh` : 'N/A'}</td>
             </tr>
             <tr>
-              <td>Annual Turnover</td>
-              <td>₹${report.annual_turnover?.toLocaleString() || 'N/A'}</td>
+              <td>Turnover</td>
+              <td>₹${report.turnover_cr != null ? `${report.turnover_cr.toLocaleString()} Cr` : 'N/A'}</td>
             </tr>
             <tr>
               <td>CSR Spending</td>
-              <td>₹${report.csr_spending?.toLocaleString() || 'N/A'}</td>
+              <td>₹${report.csr_spend_lakhs != null ? `${report.csr_spend_lakhs.toLocaleString()} Lakhs` : 'N/A'}</td>
             </tr>
           </table>
           
@@ -97,11 +98,12 @@ export async function exportReportsToCSV(filters?: {
       .from('monthly_reports')
       .select(`
         *,
-        users!user_id(full_name, email, company_name)
+        industries(name, contact_email),
+        profiles!submitted_by(full_name, email)
       `);
 
     if (filters?.userId) {
-      query = query.eq('user_id', filters.userId);
+      query = query.eq('industries.user_id', filters.userId);
     }
 
     if (filters?.status) {
@@ -131,15 +133,15 @@ export async function exportReportsToCSV(filters?: {
 
     // Create CSV rows
     const rows = reports.map(report => [
-      report.users?.company_name || 'N/A',
-      report.users?.email || 'N/A',
+      report.industries?.name || 'N/A',
+      report.industries?.contact_email || report.profiles?.email || 'N/A',
       `${report.month}/${report.year}`,
-      report.investment_amount || '',
-      report.employment_count || '',
-      report.water_consumption || '',
-      report.power_consumption || '',
-      report.annual_turnover || '',
-      report.csr_spending || '',
+      report.investment_cr ?? '',
+      report.emp_total ?? '',
+      report.water_kld ?? '',
+      report.power_kwh ?? '',
+      report.turnover_cr ?? '',
+      report.csr_spend_lakhs ?? '',
       report.status,
       report.submitted_at ? new Date(report.submitted_at).toLocaleDateString() : '',
     ]);
@@ -170,7 +172,7 @@ export async function generateComprehensiveReport(filters?: {
       .from('monthly_reports')
       .select(`
         *,
-        users!user_id(full_name, company_name, company_sector)
+        industries(name, sector, user_id)
       `)
       .eq('status', 'verified')
       .order('year', { ascending: false })
@@ -194,14 +196,14 @@ export async function generateComprehensiveReport(filters?: {
 
     // Calculate summary stats
     const summary = {
-      total_companies: new Set(reports.map(r => r.user_id)).size,
+      total_companies: new Set(reports.map(r => r.industry_id)).size,
       total_reports: reports.length,
-      total_investment: reports.reduce((sum, r) => sum + (r.investment_amount || 0), 0),
-      total_employment: reports.reduce((sum, r) => sum + (r.employment_count || 0), 0),
-      total_water: reports.reduce((sum, r) => sum + (r.water_consumption || 0), 0),
-      total_power: reports.reduce((sum, r) => sum + (r.power_consumption || 0), 0),
-      total_turnover: reports.reduce((sum, r) => sum + (r.annual_turnover || 0), 0),
-      total_csr: reports.reduce((sum, r) => sum + (r.csr_spending || 0), 0),
+      total_investment: reports.reduce((sum, r) => sum + Number(r.investment_cr || 0), 0),
+      total_employment: reports.reduce((sum, r) => sum + Number(r.emp_total || 0), 0),
+      total_water: reports.reduce((sum, r) => sum + Number(r.water_kld || 0), 0),
+      total_power: reports.reduce((sum, r) => sum + Number(r.power_kwh || 0), 0),
+      total_turnover: reports.reduce((sum, r) => sum + Number(r.turnover_cr || 0), 0),
+      total_csr: reports.reduce((sum, r) => sum + Number(r.csr_spend_lakhs || 0), 0),
     };
 
     return { summary, data: reports };

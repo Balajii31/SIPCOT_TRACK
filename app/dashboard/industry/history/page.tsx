@@ -19,8 +19,8 @@ interface Report {
   status: string;
   submitted_at: string | null;
   verified_at: string | null;
-  investment_amount: number;
-  employment_count: number;
+  investment_cr: number;
+  emp_total: number;
 }
 
 function HistoryContent() {
@@ -44,10 +44,22 @@ function HistoryContent() {
 
         if (!user) return;
 
+        // Get user's industry first
+        const { data: industry } = await supabase
+          .from('industries')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+
+        if (!industry) {
+          setReports([]);
+          return;
+        }
+
         const { data } = await supabase
           .from('monthly_reports')
           .select('*')
-          .eq('user_id', user.id)
+          .eq('industry_id', industry.id)
           .order('year', { ascending: false })
           .order('month', { ascending: false });
 
@@ -122,11 +134,11 @@ function HistoryContent() {
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <p className="text-muted-foreground">Investment</p>
-                      <p className="font-medium text-foreground">₹{report.investment_amount?.toLocaleString('en-IN') || 'N/A'}</p>
+                      <p className="font-medium text-foreground">₹{report.investment_cr != null ? `${report.investment_cr.toLocaleString('en-IN')} Cr` : 'N/A'}</p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">Employment</p>
-                      <p className="font-medium text-foreground">{report.employment_count || 'N/A'}</p>
+                      <p className="font-medium text-foreground">{report.emp_total != null ? `${report.emp_total} Persons` : 'N/A'}</p>
                     </div>
                   </div>
 
